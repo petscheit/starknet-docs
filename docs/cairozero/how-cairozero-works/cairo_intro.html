@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Introduction to Cairo &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Debugging-related flags" href="debugging_tricks.html" />
+    <link rel="prev" title="How Cairo Works" href="index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="introduction-to-cairo">
+<h1>Introduction to Cairo<a class="headerlink" href="#introduction-to-cairo" title="Link to this heading">¶</a></h1>
+<section id="field-elements">
+<span id="id1"></span><h2>Field elements<a class="headerlink" href="#field-elements" title="Link to this heading">¶</a></h2>
+<p>In modern CPUs, the basic data type is a 64-bit integer. Mathematically, we can think of it
+as doing our computations modulo <span class="math notranslate nohighlight">\(2^{64}\)</span>.
+For example, <span class="math notranslate nohighlight">\(-17\)</span> is represented as
+<span class="math notranslate nohighlight">\(2^{64} - 17\)</span> and indeed <span class="math notranslate nohighlight">\(-17 \equiv 2^{64} - 17 \pmod{2^{64}}\)</span>
+and if we multiply <span class="math notranslate nohighlight">\(2^{63}\)</span> by 2 we get 0.</p>
+<p>In Cairo, the basic data type is an integer in the range <span class="math notranslate nohighlight">\(0 \leq x &lt; P\)</span>
+where <span class="math notranslate nohighlight">\(P\)</span> is a prime number
+(for example, <span class="math notranslate nohighlight">\(P = 2^{251} + 17 \cdot 2^{192} + 1\)</span> is a standard choice).
+All the computations are done modulo <span class="math notranslate nohighlight">\(P\)</span>.</p>
+<p>In some cases, it has no effect on the code: If you’re writing a loop that
+sums the values <span class="math notranslate nohighlight">\(1, 2, 3, \ldots, 1000\)</span>, no overflow will occur and the computation
+will result in the expected value
+(note that <span class="math notranslate nohighlight">\(P\)</span> may be much larger than <span class="math notranslate nohighlight">\(2^{64}\)</span>, so extremely large values
+may be represented in one element). In some cases, you will have to prevent overflow
+as you would in regular CPUs.</p>
+<p>On the other hand, there are cases where working modulo <span class="math notranslate nohighlight">\(P\)</span> requires more caution:</p>
+<ol class="arabic simple">
+<li><p>Division – Unlike regular CPUs where integer division <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">/</span> <span class="pre">y</span></code> is defined as
+<span class="math notranslate nohighlight">\(\lfloor x / y \rfloor\)</span>
+(so <code class="docutils literal notranslate"><span class="pre">7</span> <span class="pre">/</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">3</span></code>) and it may or may not satisfy the equation <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">/</span> <span class="pre">y)</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">==</span> <span class="pre">x</span></code>,
+in Cairo, the result of <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">/</span> <span class="pre">y</span></code> is defined to always
+satisfy the equation <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">/</span> <span class="pre">y)</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">==</span> <span class="pre">x</span></code>. If <code class="docutils literal notranslate"><span class="pre">y</span></code> divides <code class="docutils literal notranslate"><span class="pre">x</span></code> as integers,
+you will get the expected result in Cairo (for example <code class="docutils literal notranslate"><span class="pre">6</span> <span class="pre">/</span> <span class="pre">2</span></code> will indeed result in 3).
+But when <code class="docutils literal notranslate"><span class="pre">y</span></code> does not divide <code class="docutils literal notranslate"><span class="pre">x</span></code>, you may get a surprising result:
+For example, since <span class="math notranslate nohighlight">\(2 \cdot \frac{P + 1}{2} = P + 1 \equiv 1 \pmod{P}\)</span>, the value of
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">2</span></code> in Cairo is <span class="math notranslate nohighlight">\(\frac{P + 1}{2}\)</span> (and not 0 or 0.5).</p></li>
+<li><p>Checking if a value is even: In regular CPU if you take a value <cite>x</cite> and multiply it by 2,
+the result is always even. This does not hold in Cairo – as we saw before, if we take
+<span class="math notranslate nohighlight">\(\frac{P + 1}{2}\)</span> and multiply by 2 we get 1, which is an odd number.
+In fact, this property works “by accident” in CPUs. If we try to generalize it slightly it fails
+even there – multiplying <code class="docutils literal notranslate"><span class="pre">x</span></code> by 3 does not always results in a number divisible by 3
+(try running the following c++ code: <code class="docutils literal notranslate"><span class="pre">std::cout</span> <span class="pre">&lt;&lt;</span> <span class="pre">12297829382473034411U</span> <span class="pre">*</span> <span class="pre">3</span> <span class="pre">&lt;&lt;</span> <span class="pre">std::endl;</span></code>).</p></li>
+</ol>
+</section>
+<section id="nondeterministic-computation">
+<h2>Nondeterministic computation<a class="headerlink" href="#nondeterministic-computation" title="Link to this heading">¶</a></h2>
+<p>As the goal of a Cairo program is to prove that some computation is correct,
+we can sometimes take shortcuts. Consider for example that our goal is to prove
+that the square root, <span class="math notranslate nohighlight">\(y\)</span>, of <span class="math notranslate nohighlight">\(x = 961\)</span>
+is in the range <span class="math notranslate nohighlight">\(0, 1, \ldots, 100\)</span>.
+The straight-forward way would be to write a complicated code that starts from
+961, computes its root and verifies that this root is in the required range.
+But we can do something much easier, simply show that if we start with 31 and
+square it we get 961 (and verify that 31 is in the range).
+This means that instead of starting with the input (961) we can start from the solution (31).
+We refer to this method as nondeterministic computation
+(you can learn more <a class="reference external" href="https://en.wikipedia.org/wiki/NP_(complexity)">here</a>).</p>
+<p>The pseudocode will take the following form:</p>
+<ol class="arabic simple">
+<li><p>Magically guess the value of <span class="math notranslate nohighlight">\(y\)</span> (this is the nondeterministic part).</p></li>
+<li><p>Compute <span class="math notranslate nohighlight">\(y^2\)</span> and make sure the result is equal to <span class="math notranslate nohighlight">\(x\)</span>.</p></li>
+<li><p>Verify <span class="math notranslate nohighlight">\(y\)</span> is in the range.</p></li>
+</ol>
+<p>You will learn more about how to write Cairo programs that take advantage of
+this ability in the sections <a class="reference internal" href="hints.html#hints"><span class="std std-ref">Hints</span></a> and <a class="reference internal" href="non_deterministic_jumps.html#non-deterministic-jumps"><span class="std std-ref">Nondeterministic jumps</span></a>.</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Write nondeterministic pseudocode for proving that the equation
+<span class="math notranslate nohighlight">\(x^7 + x + 18 = 0\)</span> has a solution.</p></li>
+<li><p>Write nondeterministic pseudocode for proving that the same equation
+has at least two different solutions.</p></li>
+</ol>
+</section>
+</section>
+<section id="memory-model">
+<span id="id2"></span><h2>Memory model<a class="headerlink" href="#memory-model" title="Link to this heading">¶</a></h2>
+<p>Cairo supports a read-only nondeterministic memory, which means that the value for each memory
+cell is chosen by the prover, but it cannot change over time (during a Cairo program execution).
+We use the syntax <code class="docutils literal notranslate"><span class="pre">[x]</span></code> to represent the value of the memory at address <code class="docutils literal notranslate"><span class="pre">x</span></code>.
+The above implies, for example, that if we assert that <code class="docutils literal notranslate"><span class="pre">[0]</span> <span class="pre">=</span> <span class="pre">7</span></code> at the beginning of a program,
+then the value of <code class="docutils literal notranslate"><span class="pre">[0]</span></code> will be <code class="docutils literal notranslate"><span class="pre">7</span></code> during the entire run.</p>
+<p>It is usually convenient to think of the memory as a write-once memory:
+you may write a value to a cell once,
+but you cannot change it afterwards.
+Thus, we may interpret an instruction that asserts that <code class="docutils literal notranslate"><span class="pre">[0]</span> <span class="pre">==</span> <span class="pre">7</span></code> either as
+“read the value from the memory cell at address 0 and verify that you got 7” or
+“write the value 7 to that memory cell” depending on the context
+(in the read-only nondeterministic memory model they mean the same thing).</p>
+</section>
+<section id="registers">
+<span id="id3"></span><h2>Registers<a class="headerlink" href="#registers" title="Link to this heading">¶</a></h2>
+<p>The only values that may change over time are held within designated registers:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ap</span></code> (allocation pointer) - points to a yet-unused memory cell.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fp</span></code> (frame pointer) - points to the frame of the current function. The addresses of all the
+function’s arguments and local variables are relative to the value of this register.
+When a function starts, it is equal to <code class="docutils literal notranslate"><span class="pre">ap</span></code>. But unlike <code class="docutils literal notranslate"><span class="pre">ap</span></code>, the value of <code class="docutils literal notranslate"><span class="pre">fp</span></code>
+remains the same throughout the scope of a function.
+You will learn more about <code class="docutils literal notranslate"><span class="pre">fp</span></code> in <a class="reference internal" href="functions.html#fp-register"><span class="std std-ref">The fp register</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pc</span></code> (program counter) - points to the current instruction.</p></li>
+</ul>
+</section>
+<section id="basic-instructions">
+<span id="id4"></span><h2>Basic instructions<a class="headerlink" href="#basic-instructions" title="Link to this heading">¶</a></h2>
+<p>A simple Cairo instruction takes the form of an assertion for equality. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">ap</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">ap</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">[</span><span class="n">fp</span><span class="p">],</span> <span class="n">ap</span><span class="o">++</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>states that the product of two memory cells (<code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span></code> and <code class="docutils literal notranslate"><span class="pre">[fp]</span></code>) must be the same as the
+value of the next unused cell (<code class="docutils literal notranslate"><span class="pre">[ap]</span></code>).
+We think of this as “writing” the product of the two values into <code class="docutils literal notranslate"><span class="pre">[ap]</span></code>.
+The suffix <code class="docutils literal notranslate"><span class="pre">ap++</span></code> tells Cairo to increase <code class="docutils literal notranslate"><span class="pre">ap</span></code> by one after performing the instruction
+(to change <code class="docutils literal notranslate"><span class="pre">ap</span></code> in any way other than <code class="docutils literal notranslate"><span class="pre">ap++</span></code>, you must use the designated instruction
+<code class="docutils literal notranslate"><span class="pre">ap</span> <span class="pre">+=</span> <span class="pre">...</span></code>). <code class="docutils literal notranslate"><span class="pre">ap++</span></code> is not an instruction on its own - it is part of the instruction
+that appears before the comma. The comma syntax is unique to <code class="docutils literal notranslate"><span class="pre">ap++</span></code> and cannot be
+used to separate two instructions.</p>
+<p>The following list demonstrates what are the valid assert-equal instructions we have in Cairo:</p>
+<ol class="loweralpha">
+<li><p>There are two types of integers that may appear in an instruction:</p>
+<ul class="simple">
+<li><p>Immediates, which can either serve as the second operands in a given operation
+(such as <code class="docutils literal notranslate"><span class="pre">12345</span></code> in <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span> <span class="pre">=</span> <span class="pre">[fp</span> <span class="pre">+</span> <span class="pre">10]</span> <span class="pre">+</span> <span class="pre">12345;</span></code>) or as a standalone value for
+assignment (such as <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">+</span> <span class="pre">2]</span> <span class="pre">=</span> <span class="pre">12345;</span></code>).</p></li>
+<li><p>Offsets, which appear inside brackets
+(such as <code class="docutils literal notranslate"><span class="pre">5</span></code> in <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">5]</span></code> or <code class="docutils literal notranslate"><span class="pre">-3</span></code> in <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">-</span> <span class="pre">3]</span></code>).</p></li>
+</ul>
+<p>An immediate can be any field element, while an offset is limited to the range
+<span class="math notranslate nohighlight">\([-2^{15}, 2^{15})\)</span>.</p>
+</li>
+<li><p>The instruction <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">2]</span> <span class="pre">=</span> <span class="pre">[[ap</span> <span class="pre">+</span> <span class="pre">5]];</span></code> is a double dereference instruction where you take the
+value <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">5]</span></code> and regard it as an address to the memory.</p></li>
+<li><p>These instructions are syntactic sugar – they are replaced by
+<code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">-</span> <span class="pre">3]</span> <span class="pre">=</span> <span class="pre">[ap]</span> <span class="pre">+</span> <span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">4];</span></code> and <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">-</span> <span class="pre">3]</span> <span class="pre">=</span> <span class="pre">[ap]</span> <span class="pre">*</span> <span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">4];</span></code> respectively.</p></li>
+</ol>
+<p>Cairo also supports a high-level syntax which allows the user to write statements involving more
+than one operation, as you’ll see in <a class="reference internal" href="consts.html#assert-statement"><span class="std std-ref">The assert statement and compound expressions</span></a>.</p>
+<section id="exercise-a-simple-cairo-program">
+<span id="a-simple-cairo-program-exercise"></span><h3>Exercise - A simple Cairo program<a class="headerlink" href="#exercise-a-simple-cairo-program" title="Link to this heading">¶</a></h3>
+<p>Write a program poly.cairo that computes the expression:</p>
+<div class="math notranslate nohighlight">
+\[x^3 + 23x^2 + 45x + 67, \quad x=100\]</div>
+<ol class="arabic simple">
+<li><p>After the program ends, the value should be at <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span></code>.</p></li>
+<li><p>For this exercise, you may assume that the <code class="docutils literal notranslate"><span class="pre">fp</span></code> register is constant and initialized to
+the same value as <code class="docutils literal notranslate"><span class="pre">ap</span></code>.</p></li>
+</ol>
+<p>Use the following template:</p>
+<ol class="arabic" start="3">
+<li><p>Your code shouldn’t depend on the value of <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></li>
+<li><p>Bonus: This can be done using 5 instructions, not counting the ones given in the template.</p></li>
+<li><p>Compile with <code class="docutils literal notranslate"><span class="pre">cairo-compile</span></code> and inspect the output.
+The output should be in <code class="docutils literal notranslate"><span class="pre">poly_compiled.json</span></code>.</p></li>
+<li><p>Run the program (this will invoke the Cairo VM):</p>
+<p>Take a look at the output: You should see the memory values
+(the last cell should be 1234567).
+Verify that you understand what’s going on there.</p>
+</li>
+</ol>
+</section>
+</section>
+<section id="continuous-memory">
+<span id="id5"></span><h2>Continuous memory<a class="headerlink" href="#continuous-memory" title="Link to this heading">¶</a></h2>
+<p>Cairo has a technical requirement that memory addresses accessed by a program
+must be continuous. For example, if addresses 7 and 9 are accessed,
+then 8 must also be accessed before the end of the program (the order of access doesn’t matter).
+If small gaps in the address range are present, the prover will automatically fill those addresses
+with arbitrary values.
+Generally, having such gaps is inefficient, as it means memory is being consumed without being used.
+Introducing too many holes could make the generation of a proof too expensive for an honest prover
+to perform.
+However, this still does not violate the soundness guarantee – a false proof cannot be generated
+regardless.</p>
+<section id="id6">
+<h3>Exercise<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p>Run the following program:</p>
+<p>Explain why the execution of this program creates a memory gap, and therefore an inefficiency
+(given what you’ve just read in the above section).
+Add one instruction at the end of the function (just before <code class="docutils literal notranslate"><span class="pre">ret</span></code>) so that there won’t be a
+memory gap.</p>
+</li>
+<li><p>What’s wrong with the following code?</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">How Cairo Works</a></li>
+      <li>Next: <a href="debugging_tricks.html" title="next chapter">Debugging-related flags</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/cairo_intro.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

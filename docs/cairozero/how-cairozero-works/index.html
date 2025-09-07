@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How Cairo Works &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Introduction to Cairo" href="cairo_intro.html" />
+    <link rel="prev" title="A simple Automated Market Maker (AMM)" href="../hello-cairozero/amm.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="how-cairo-works">
+<span id="id1"></span><h1>How Cairo Works<a class="headerlink" href="#how-cairo-works" title="Link to this heading">¶</a></h1>
+<p>“How Cairo Works” starts from the low-level assembly-like version of Cairo and explains the
+syntactic sugar mechanisms applied by the Cairo compiler,
+which turns Cairo to a high-level-like language.
+If you are looking for a hands-on experience and would like to start writing programs,
+take a look at the <a class="reference internal" href="../hello-cairozero/index.html#hello-cairo"><span class="std std-ref">“Hello, Cairo” tutorial</span></a>.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html#field-elements">Field elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html#nondeterministic-computation">Nondeterministic computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html#memory-model">Memory model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html#registers">Registers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html#basic-instructions">Basic instructions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html#continuous-memory">Continuous memory</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html#print-info"><code class="docutils literal notranslate"><span class="pre">--print_info</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html#print-memory"><code class="docutils literal notranslate"><span class="pre">--print_memory</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html#steps"><code class="docutils literal notranslate"><span class="pre">--steps</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html#no-end"><code class="docutils literal notranslate"><span class="pre">--no_end</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html#debug-error"><code class="docutils literal notranslate"><span class="pre">--debug_error</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html#profile-output-profile-pb-gz"><code class="docutils literal notranslate"><span class="pre">--profile_output</span> <span class="pre">profile.pb.gz</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="program_counter.html">The program counter (pc)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html#program-counter-and-jumps">Program counter and jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html#conditional-jumps">Conditional jumps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="consts.html">Consts and references</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#consts">Consts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#short-string-literals">Short string literals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#the-assert-statement-and-compound-expressions">The assert statement and compound expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#revoked-references">Revoked references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#typed-references">Typed references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#casting">Casting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#temporary-variables">Temporary variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#local-variables">Local variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#typed-local-variables">Typed local variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#reference-rebinding">Reference rebinding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#tuples">Tuples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html#arrays">Arrays</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="functions.html">Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#the-fp-register">The fp register</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#under-the-hood">Under the hood</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#accessing-the-values-of-the-registers">Accessing the values of the registers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#function-arguments-and-return-values">Function arguments and return values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#named-arguments">Named arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#tail-recursion">Tail recursion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html#return-tuple">Return tuple</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="types.html">Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="types.html#tuples">Tuples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html#user-defined-type-aliases">User-defined type aliases</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="object_allocation.html">Object allocation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html#alloc">alloc()</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html#the-new-operator">The “new” operator</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="imports.html">Imports</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="imports.html#import-search-paths">Import search paths</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hints.html">Hints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hints.html#introduction">Introduction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html#program-input">Program input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html#id2">Program output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="segments.html">Segments</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="segments.html#rationale">Rationale</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html#relocatable-values">Relocatable values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html#uses">Uses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html#example">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html#exercise">Exercise</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html#exercise">Exercise</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#implicit-arguments">Implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#calling-a-function-that-gets-implicit-arguments">Calling a function that gets implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#revoked-implicit-arguments">Revoked implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#layouts">Layouts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#the-builtins-directive">The <code class="docutils literal notranslate"><span class="pre">%builtins</span></code> directive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html#range-checks">Range-checks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</div>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How Cairo Works</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../hello-cairozero/amm.html" title="previous chapter">A simple Automated Market Maker (AMM)</a></li>
+      <li>Next: <a href="cairo_intro.html" title="next chapter">Introduction to Cairo</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

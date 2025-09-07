@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The program counter (pc) &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Consts and references" href="consts.html" />
+    <link rel="prev" title="Debugging-related flags" href="debugging_tricks.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="the-program-counter-pc">
+<h1>The program counter (pc)<a class="headerlink" href="#the-program-counter-pc" title="Link to this heading">¶</a></h1>
+<section id="program-counter-and-jumps">
+<h2>Program counter and jumps<a class="headerlink" href="#program-counter-and-jumps" title="Link to this heading">¶</a></h2>
+<p>The program is stored in memory, where each instruction takes 1 or 2 field elements
+(for example, when an immediate value is used in the instruction, it takes 2 field elements,
+where the second one is the immediate value).</p>
+<p>The program counter (<code class="docutils literal notranslate"><span class="pre">pc</span></code>) keeps the address of the current instruction.
+Usually it advances by 1 or 2 per instruction according to the size of the instruction
+(when the current instruction occupies two field elements, the program counter advances by 2 for
+the next instruction).</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">jmp</span></code> instruction may be used to jump to a different instruction.
+<code class="docutils literal notranslate"><span class="pre">jmp</span></code> is available in three flavors:</p>
+<ol class="arabic simple">
+<li><p>Absolute jump: jumps to a given address (by changing the program counter to the given value).
+For example, <code class="docutils literal notranslate"><span class="pre">jmp</span> <span class="pre">abs</span> <span class="pre">17;</span></code> will change <code class="docutils literal notranslate"><span class="pre">pc</span></code> to 17.</p></li>
+<li><p>Relative jump: jumps to an offset from the current instruction.
+For example, <code class="docutils literal notranslate"><span class="pre">jmp</span> <span class="pre">rel</span> <span class="pre">17;</span></code> will change <code class="docutils literal notranslate"><span class="pre">pc</span></code> to <code class="docutils literal notranslate"><span class="pre">pc</span> <span class="pre">+</span> <span class="pre">17</span></code>.
+Note that <code class="docutils literal notranslate"><span class="pre">pc</span></code> refers to the value of the program counter of the current instruction.
+Thus, a special case is the instruction <code class="docutils literal notranslate"><span class="pre">jmp</span> <span class="pre">rel</span> <span class="pre">0;</span></code> which jumps to itself,
+thus creating an infinite loop.</p></li>
+<li><p>Jump to a label: this translates to a relative jump where the Cairo compiler is automatically
+computing the difference between the current instruction and the label.
+This is the most useful (and readable) jump.</p></li>
+</ol>
+<section id="exercise">
+<span id="my-loop-exercise"></span><h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>What does the following code do? (run with <code class="docutils literal notranslate"><span class="pre">--no_end</span> <span class="pre">--step=16</span></code> to avoid the
+<code class="docutils literal notranslate"><span class="pre">End</span> <span class="pre">of</span> <span class="pre">program</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">reached</span></code> error)</p>
+</section>
+<section id="bonus-exercise">
+<h3>Bonus exercise<a class="headerlink" href="#bonus-exercise" title="Link to this heading">¶</a></h3>
+<p>What happens in the following code?
+(you can start by running it and looking at the memory; note that you will need the
+<code class="docutils literal notranslate"><span class="pre">--no_end</span></code> flag)</p>
+</section>
+</section>
+<section id="conditional-jumps">
+<span id="id1"></span><h2>Conditional jumps<a class="headerlink" href="#conditional-jumps" title="Link to this heading">¶</a></h2>
+<p>Another important type of instruction is the conditional jump.
+The syntax of the instruction is <code class="docutils literal notranslate"><span class="pre">jmp</span> <span class="pre">&lt;label&gt;</span> <span class="pre">if</span> <span class="pre">[&lt;expr&gt;]</span> <span class="pre">!=</span> <span class="pre">0;</span></code>
+where <code class="docutils literal notranslate"><span class="pre">&lt;expr&gt;</span></code> is either <code class="docutils literal notranslate"><span class="pre">ap</span> <span class="pre">+</span> <span class="pre">offset</span></code> or <code class="docutils literal notranslate"><span class="pre">fp</span> <span class="pre">+</span> <span class="pre">offset</span></code> (<code class="docutils literal notranslate"><span class="pre">offset</span></code> may be omitted).
+If the corresponding memory cell is not zero,
+the Cairo machine will jump to the given label. Otherwise,
+it will continue to the next instruction normally.
+Instead of using a label, you may also use <code class="docutils literal notranslate"><span class="pre">rel</span> <span class="pre">&lt;expr&gt;</span></code> in a similar way to
+a regular jump (for example <code class="docutils literal notranslate"><span class="pre">jmp</span> <span class="pre">rel</span> <span class="pre">17</span> <span class="pre">if</span> <span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span> <span class="pre">!=</span> <span class="pre">0;</span></code>).</p>
+<section id="id2">
+<h3>Exercise<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p>Edit the loop <code class="docutils literal notranslate"><span class="pre">my_loop</span></code> in the <a class="reference internal" href="#my-loop-exercise"><span class="std std-ref">exercise above</span></a>
+so that it starts by writing 10 to <code class="docutils literal notranslate"><span class="pre">[ap]</span></code>,
+continues by writing the decreasing sequence <span class="math notranslate nohighlight">\(9, 8, 7, \ldots, 0\)</span>
+and then returns. Don’t forget the <code class="docutils literal notranslate"><span class="pre">ret</span></code> instruction.
+Verify that your code works as expected by looking at the memory.</p>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="debugging_tricks.html" title="previous chapter">Debugging-related flags</a></li>
+      <li>Next: <a href="consts.html" title="next chapter">Consts and references</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/program_counter.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

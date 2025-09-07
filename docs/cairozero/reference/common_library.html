@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Common Library &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using SHARP (Shared Prover)" href="../sharp.html" />
+    <link rel="prev" title="Syntax" href="syntax.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="common-library">
+<h1>Common Library<a class="headerlink" href="#common-library" title="Link to this heading">¶</a></h1>
+<p>This page summarizes library functions available in the Cairo common library.
+The common library is written in Cairo, and its code can be found
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/tree/master/src/starkware/cairo/common">here</a>. It
+provides a level of abstraction for common and useful components that can be imported
+for use in any Cairo program.</p>
+<p>The libraries available are listed below, organized alphabetically. The functions
+within each library are outlined under the relevant library heading.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#common-library-alloc"><span class="std std-ref">alloc</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-bitwise"><span class="std std-ref">bitwise</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-cairo-builtins"><span class="std std-ref">cairo_builtins</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-default-dict"><span class="std std-ref">default_dict</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-dict"><span class="std std-ref">dict</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-dict-access"><span class="std std-ref">dict_access</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-find-element"><span class="std std-ref">find_element</span></a>.</p></li>
+<li><p><a class="reference internal" href="#common-library-set"><span class="std std-ref">set</span></a>.</p></li>
+</ul>
+<p>Some descriptions state that the library function
+“requires the implicit argument <code class="docutils literal notranslate"><span class="pre">&lt;argument&gt;</span></code>”. See <a class="reference internal" href="syntax.html#syntax-implicit-arguments"><span class="std std-ref">Implicit arguments</span></a>
+for more information on this topic.</p>
+<section id="alloc">
+<span id="common-library-alloc"></span><h2><code class="docutils literal notranslate"><span class="pre">alloc</span></code><a class="headerlink" href="#alloc" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/alloc.cairo">alloc</a>
+module.</p>
+<section id="id2">
+<h3><code class="docutils literal notranslate"><span class="pre">alloc()</span></code><a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p>Returns a pointer to a newly allocated memory segment.
+This is useful when defining dynamically allocated
+arrays. As more elements are added, more memory will be allocated.</p>
+</section>
+</section>
+<section id="cairo-builtins">
+<span id="common-library-cairo-builtins"></span><h2><code class="docutils literal notranslate"><span class="pre">cairo_builtins</span></code><a class="headerlink" href="#cairo-builtins" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/cairo_builtins.cairo">cairo_builtins</a>
+module.</p>
+<section id="bitwisebuiltin">
+<h3><code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin</span></code><a class="headerlink" href="#bitwisebuiltin" title="Link to this heading">¶</a></h3>
+<p>A struct specifying the bitwise builtin memory structure.
+This struct is used by functions from the common library that use the <code class="docutils literal notranslate"><span class="pre">bitwise</span></code> builtin.
+For example, the <code class="docutils literal notranslate"><span class="pre">bitwise_xor()</span></code> function accepts an implicit
+argument of type <code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin*</span></code>, which is used internally to track the next available
+builtin instance. See the function
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/bitwise.cairo">here</a>.</p>
+<p>The struct has the following members of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code>, the first oprand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code>, the second operand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x_and_y</span></code>, the result of bitwise AND operation on x and y.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x_xor_y</span></code>, the result of bitwise XOR operation on x and y.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x_or_y</span></code>, the result of bitwise OR operation on x and y.</p></li>
+</ul>
+<p>A pointer to the <code class="docutils literal notranslate"><span class="pre">bitwise</span></code> builtin, <code class="docutils literal notranslate"><span class="pre">bitwise_ptr</span></code>, has the type <code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin*</span></code>.</p>
+</section>
+<section id="hashbuiltin">
+<h3><code class="docutils literal notranslate"><span class="pre">HashBuiltin</span></code><a class="headerlink" href="#hashbuiltin" title="Link to this heading">¶</a></h3>
+<p>A struct specifying the hash builtin memory structure.
+This struct is used by functions from the common library that use a hash builtin,
+such as the <code class="docutils literal notranslate"><span class="pre">pedersen</span></code> builtin. For example, the <code class="docutils literal notranslate"><span class="pre">hash2()</span></code> function accepts an implicit
+argument of type <code class="docutils literal notranslate"><span class="pre">HashBuiltin*</span></code>, which is used internally to track the next available
+builtin instance. See the function
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/hash.cairo">here</a>.</p>
+<p>The struct has the following members of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code>, the first input being hashed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code>, the second input being hashed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">result</span></code>, the hash of <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p></li>
+</ul>
+<p>A pointer to the <code class="docutils literal notranslate"><span class="pre">pedersen</span></code> builtin, <code class="docutils literal notranslate"><span class="pre">pedersen_ptr</span></code>, has the type <code class="docutils literal notranslate"><span class="pre">HashBuiltin*</span></code>.</p>
+</section>
+<section id="signaturebuiltin">
+<h3><code class="docutils literal notranslate"><span class="pre">SignatureBuiltin</span></code><a class="headerlink" href="#signaturebuiltin" title="Link to this heading">¶</a></h3>
+<p>A struct specifying the signature builtin memory structure.
+This struct is used by functions from the common library that use a signature builtin,
+such as the <code class="docutils literal notranslate"><span class="pre">ecdsa</span></code> builtin. For example, the <code class="docutils literal notranslate"><span class="pre">verify_ecdsa_signature()</span></code> function
+accepts an implicit argument of type <code class="docutils literal notranslate"><span class="pre">SignatureBulitin*</span></code>, which is used internally
+to track the next available builtin instance. See the function
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/signature.cairo">here</a>.</p>
+<p>The struct has the following members of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pub_key</span></code>, an ECDSA public key.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">message</span></code>, a message signed by the <code class="docutils literal notranslate"><span class="pre">pub_key</span></code>.</p></li>
+</ul>
+<p>A pointer to the <code class="docutils literal notranslate"><span class="pre">ecdsa</span></code> builtin, <code class="docutils literal notranslate"><span class="pre">ecdsa_ptr</span></code>, has the type <code class="docutils literal notranslate"><span class="pre">SignatureBuiltin*</span></code>.</p>
+</section>
+</section>
+<section id="bitwise">
+<span id="common-library-bitwise"></span><h2><code class="docutils literal notranslate"><span class="pre">bitwise</span></code><a class="headerlink" href="#bitwise" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/bitwise.cairo">bitwise</a>
+module.</p>
+<section id="bitwise-and">
+<h3><code class="docutils literal notranslate"><span class="pre">bitwise_and()</span></code><a class="headerlink" href="#bitwise-and" title="Link to this heading">¶</a></h3>
+<p>Returns the result of the bitwise AND operation of two elements. Requires an implicit
+argument, <code class="docutils literal notranslate"><span class="pre">bitwise_ptr</span></code> of type <code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin*</span></code>.</p>
+<p>The function accepts the explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the first operand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the second operand.</p></li>
+</ul>
+<p>The function returns the value:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x_and_y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the result of the bitwise <code class="docutils literal notranslate"><span class="pre">AND</span></code> operation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">&amp;</span> <span class="pre">b</span></code>.</p></li>
+</ul>
+<p>The example below shows the operation on binary inputs <code class="docutils literal notranslate"><span class="pre">1100</span></code> and <code class="docutils literal notranslate"><span class="pre">1010</span></code>
+results in <code class="docutils literal notranslate"><span class="pre">1000</span></code>:</p>
+</section>
+<section id="bitwise-xor">
+<h3><code class="docutils literal notranslate"><span class="pre">bitwise_xor()</span></code><a class="headerlink" href="#bitwise-xor" title="Link to this heading">¶</a></h3>
+<p>Returns the result of the bitwise XOR operation on two elements. Requires an implicit
+argument, <code class="docutils literal notranslate"><span class="pre">bitwise_ptr</span></code> of type <code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin*</span></code>.</p>
+<p>The function accepts the explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the first operand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the second operand.</p></li>
+</ul>
+<p>The function returns the value:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x_xor_y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the result of the bitwise <code class="docutils literal notranslate"><span class="pre">XOR</span></code> operation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">^</span> <span class="pre">b</span></code>.</p></li>
+</ul>
+<p>The example below shows the operation on binary inputs <code class="docutils literal notranslate"><span class="pre">1100</span></code> and <code class="docutils literal notranslate"><span class="pre">1010</span></code>
+results in <code class="docutils literal notranslate"><span class="pre">0110</span></code>:</p>
+</section>
+<section id="bitwise-or">
+<h3><code class="docutils literal notranslate"><span class="pre">bitwise_or()</span></code><a class="headerlink" href="#bitwise-or" title="Link to this heading">¶</a></h3>
+<p>Returns the result of the bitwise OR operation on two elements. Requires an implicit
+argument, <code class="docutils literal notranslate"><span class="pre">bitwise_ptr</span></code> of type <code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin*</span></code>.</p>
+<p>The function accepts the explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the first operand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the second operand.</p></li>
+</ul>
+<p>The function returns the value:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x_or_y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the result of the bitwise <code class="docutils literal notranslate"><span class="pre">OR</span></code> operation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">|</span> <span class="pre">b</span></code>.</p></li>
+</ul>
+<p>The example below shows the operation on binary inputs <code class="docutils literal notranslate"><span class="pre">1100</span></code> and <code class="docutils literal notranslate"><span class="pre">1010</span></code>
+results in <code class="docutils literal notranslate"><span class="pre">1110</span></code>:</p>
+</section>
+<section id="bitwise-operations">
+<h3><code class="docutils literal notranslate"><span class="pre">bitwise_operations()</span></code><a class="headerlink" href="#bitwise-operations" title="Link to this heading">¶</a></h3>
+<p>Returns the result of the bitwise AND, XOR and OR operations on two elements. Requires
+an implicit argument, <code class="docutils literal notranslate"><span class="pre">bitwise_ptr</span></code> of type <code class="docutils literal notranslate"><span class="pre">BitwiseBuiltin*</span></code>.</p>
+<p>The function accepts the explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the first operand.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the second operand.</p></li>
+</ul>
+<p>The function returns the values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x_and_y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the result of the bitwise <code class="docutils literal notranslate"><span class="pre">AND</span></code> operation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">&amp;</span> <span class="pre">b</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x_xor_y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the result of the bitwise <code class="docutils literal notranslate"><span class="pre">XOR</span></code> operation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">^</span> <span class="pre">b</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x_or_y</span></code> of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the result of the bitwise <code class="docutils literal notranslate"><span class="pre">OR</span></code> operation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">|</span> <span class="pre">b</span></code>.</p></li>
+</ul>
+<p>The example below shows the operation on binary inputs <code class="docutils literal notranslate"><span class="pre">1100</span></code> and <code class="docutils literal notranslate"><span class="pre">1010</span></code>
+results in <code class="docutils literal notranslate"><span class="pre">1000</span></code>, <code class="docutils literal notranslate"><span class="pre">0110</span></code> and <code class="docutils literal notranslate"><span class="pre">1110</span></code>:</p>
+</section>
+</section>
+<section id="default-dict">
+<span id="common-library-default-dict"></span><h2><code class="docutils literal notranslate"><span class="pre">default_dict</span></code><a class="headerlink" href="#default-dict" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/default_dict.cairo">default_dict</a>
+module.</p>
+<section id="default-dict-new">
+<h3><code class="docutils literal notranslate"><span class="pre">default_dict_new()</span></code><a class="headerlink" href="#default-dict-new" title="Link to this heading">¶</a></h3>
+<p>Returns a new dictionary where all keys are initialized with a given default value.
+One can interact with the dictionary using the <code class="docutils literal notranslate"><span class="pre">dict_read()</span></code>, <code class="docutils literal notranslate"><span class="pre">dict_write()</span></code>
+operations discussed in the <code class="docutils literal notranslate"><span class="pre">dict</span></code> module.
+Note that in order to enforce the consistency of subsequent dictionary accesses with
+the default values, one must eventually call <code class="docutils literal notranslate"><span class="pre">default_dict_finalize()</span></code> (which in turn calls
+<code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code>, as discussed in the corresponding section). Otherwise, this is only enforced
+by hints which can be bypassed by a malicious prover.</p>
+<p>The function expects the explicit argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">default_value</span></code>, the default value.</p></li>
+</ul>
+<p>The function returns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">res</span></code>, of type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>, a pointer to the new dictionary.</p></li>
+</ul>
+</section>
+<section id="default-dict-finalize">
+<h3><code class="docutils literal notranslate"><span class="pre">default_dict_finalize()</span></code><a class="headerlink" href="#default-dict-finalize" title="Link to this heading">¶</a></h3>
+<p>Squashes the dictionary and verifies consistency with respect to the default value.
+A squashed dictionary is one whose intermediate updates have been summarized and each
+key appears exactly once with its most recent value.
+For more details see <code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code> from the <code class="docutils literal notranslate"><span class="pre">dict</span></code> module.</p>
+<p>The function expects three explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dict_accesses_start</span></code>, a pointer to the initial dictionary (first operation).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dict_accesses_end</span></code>, a pointer to the end of the dictionary (last operation).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default_value</span></code>, the expected initial value of each key.</p></li>
+</ul>
+<p>The function returns the values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">squashed_dict_start</span></code>, a pointer to the start of the squashed dictionary.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">squashed_dict_end</span></code>, a pointer to the end of the squashed dictionary.</p></li>
+</ul>
+<p>Note that one must eventually call <code class="docutils literal notranslate"><span class="pre">default_dict_finalize()</span></code> to verify both the internal
+consistency of the <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> entries forming the dictionary and of the consistency
+with the default value.</p>
+<p>In the example below we create and finalize a default dictionary, and explain what
+may happen if <code class="docutils literal notranslate"><span class="pre">default_dict_finalize()</span></code> is not called.</p>
+</section>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h3>
+</section>
+</section>
+<section id="dict">
+<span id="common-library-dict"></span><h2><code class="docutils literal notranslate"><span class="pre">dict</span></code><a class="headerlink" href="#dict" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/dict.cairo">dict</a>
+module for working with user defined dictionaries, abstracting away Cairo’s simulation
+of dictionaries as an array of read/write logs.</p>
+<section id="dict-new">
+<h3><code class="docutils literal notranslate"><span class="pre">dict_new()</span></code><a class="headerlink" href="#dict-new" title="Link to this heading">¶</a></h3>
+<p>Returns a new dictionary. The function does not require any arguments.
+A new dictionary is initially populated by using a hint with the
+expression <code class="docutils literal notranslate"><span class="pre">initial_dict</span></code>. The dictionary associated with that expression
+will be found by the <code class="docutils literal notranslate"><span class="pre">__dict_manager</span></code>.</p>
+<p>Note that Cairo has no way to enforce that subsequent read/writes are consistent
+with the <code class="docutils literal notranslate"><span class="pre">initial_dict</span></code> hint (this is only enforced at the Python level). Technically, the
+return value is a pointer to an empty <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array. Soundness with respect to the
+initial values can only be achieved with explicit initialization of the dictionary or
+by using the <code class="docutils literal notranslate"><span class="pre">default_dict_new()</span></code> from the
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/default_dict.cairo">default_dict</a>
+module instead, which is not based on user-defined hints (and is thus also
+available in StarkNet, unlike <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code>).
+One must eventually call dict_squash() when using the dictionary.</p>
+<p>The function returns the argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">res</span></code>, of type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>, a pointer to the new dictionary.</p></li>
+</ul>
+</section>
+<section id="dict-read">
+<h3><code class="docutils literal notranslate"><span class="pre">dict_read()</span></code><a class="headerlink" href="#dict-read" title="Link to this heading">¶</a></h3>
+<p>Returns the value of a specified dictionary key. Must be passed an implicit argument,
+<code class="docutils literal notranslate"><span class="pre">dict_ptr</span></code>, of type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>, representing the pointer to the end of the dictionary.
+Only available for dictionaries created via <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code> or <code class="docutils literal notranslate"><span class="pre">default_dict_new()</span></code>.</p>
+<p>Note that the consistency of the returned value from <code class="docutils literal notranslate"><span class="pre">dict_read()</span></code> is only verified
+at the hint level (technically, <code class="docutils literal notranslate"><span class="pre">dict_read()</span></code> appends one <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> instruction
+to the dictionary). To make sure that a malicious prover won’t be able to return a
+different value one must eventually call <code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code>.</p>
+<p>The function accepts the explicit argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the requested key.</p></li>
+</ul>
+<p>The function returns the argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">value</span></code>, of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the value assigned to <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p></li>
+</ul>
+<p>The example below shows, for an existing dictionary whose end pointer is <code class="docutils literal notranslate"><span class="pre">my_dict</span></code>,
+how the value associated with the key <code class="docutils literal notranslate"><span class="pre">12</span></code> can be read. Note how the pointer <code class="docutils literal notranslate"><span class="pre">my_dict</span></code>
+is passed as an implicit argument.</p>
+</section>
+<section id="dict-write">
+<h3><code class="docutils literal notranslate"><span class="pre">dict_write()</span></code><a class="headerlink" href="#dict-write" title="Link to this heading">¶</a></h3>
+<p>Overrides the current value of an existing key. In order to work with a dynamic
+dictionary one can initialize it with <code class="docutils literal notranslate"><span class="pre">default_dict_new()</span></code> rather than <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code>
+(in which case all keys are assumed to be present, initially with the default value).
+Must be passed a pointer to the end of the dictionary, <code class="docutils literal notranslate"><span class="pre">dict_ptr</span></code>, of
+type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>, as an implicit argument. No values are returned.
+Only available for dictionaries created via <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code> or <code class="docutils literal notranslate"><span class="pre">default_dict_new()</span></code>.</p>
+<p>The function accepts the explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the key to override.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">new_value</span></code>, of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>, the value to be assigned to <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p></li>
+</ul>
+<p>The example below shows how, for an existing dictionary whose pointer is <code class="docutils literal notranslate"><span class="pre">my_dict</span></code>,
+the value associated with the key <code class="docutils literal notranslate"><span class="pre">12</span></code> can be changed from <code class="docutils literal notranslate"><span class="pre">35</span></code> to <code class="docutils literal notranslate"><span class="pre">34</span></code>.
+Note how the pointer <code class="docutils literal notranslate"><span class="pre">my_dict</span></code> is passed as an implicit argument.</p>
+</section>
+<section id="dict-update">
+<h3><code class="docutils literal notranslate"><span class="pre">dict_update()</span></code><a class="headerlink" href="#dict-update" title="Link to this heading">¶</a></h3>
+<p>Updates the value of a given key in a dictionary. <code class="docutils literal notranslate"><span class="pre">dict_ptr</span></code>, of type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>,
+representing a pointer to the end of the dictionary, must be passed as an
+implicit argument to this function. Only available for dictionaries created via <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code>
+or <code class="docutils literal notranslate"><span class="pre">default_dict_new()</span></code>. No values are returned.</p>
+<p>The function expects three explicit arguments of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, the key to update.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prev_value</span></code>, the current value assigned to <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">new_value</span></code>, the value to be assigned to <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p></li>
+</ul>
+<p>It is possible to get <code class="docutils literal notranslate"><span class="pre">prev_value</span></code> from <code class="docutils literal notranslate"><span class="pre">__dict_manager</span></code> using the hint:</p>
+<p><code class="docutils literal notranslate"><span class="pre">%{</span> <span class="pre">ids.new_value</span> <span class="pre">=</span> <span class="pre">__dict_manager.get_dict(ids.dict_ptr)[ids.key]</span> <span class="pre">%}</span></code></p>
+<p>The example demonstrates how to update the value of a specified key for a
+dictionary whose end pointer is referenced by <code class="docutils literal notranslate"><span class="pre">dict_end</span></code>.</p>
+<p>One can think of <code class="docutils literal notranslate"><span class="pre">dict_update()</span></code> as a conditional write. Passing <code class="docutils literal notranslate"><span class="pre">prev_value</span></code>
+ensures that an override will only occur in case the current value equals <code class="docutils literal notranslate"><span class="pre">prev_value</span></code>.
+Note that this is only verified at the hint level and consistency relies on eventual
+squashing.</p>
+</section>
+<section id="dict-squash">
+<h3><code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code><a class="headerlink" href="#dict-squash" title="Link to this heading">¶</a></h3>
+<p>Squashes a dictionary represented by an array of read/write logs.
+A squashed dictionary is one whose intermediate updates have been summarized and each key
+appears exactly once with its most recent value. This is the only function in this module that
+asserts the consistency of accesses to the dictionary represented by the <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array.
+A program that uses dict operations without invoking <code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code> can run successfully
+even if it contains inconsistent dictionary operations (see example below).</p>
+<p>The function uses the <code class="docutils literal notranslate"><span class="pre">range_check</span></code> builtin and thus
+requires <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code> as an implicit argument.</p>
+<p>The function expects two explicit arguments of type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dict_accesses_start</span></code>, a pointer to the start of the dictionary (first operation).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dict_accesses_end</span></code>, a pointer to the end of the dictionary (last operation).</p></li>
+</ul>
+<p>The function returns two values of type <code class="docutils literal notranslate"><span class="pre">DictAccess*</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">squashed_dict_start</span></code>, a pointer to the start of the squashed dictionary.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">squashed_dict_end</span></code>, a pointer to the end of the squashed dictionary.</p></li>
+</ul>
+<p>The only function that uses <code class="docutils literal notranslate"><span class="pre">dict_accesses_start</span></code> is <code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code>. All
+other dictionary operations append to the array of <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> instances.</p>
+</section>
+</section>
+<section id="dict-access">
+<span id="common-library-dict-access"></span><h2><code class="docutils literal notranslate"><span class="pre">dict_access</span></code><a class="headerlink" href="#dict-access" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/dict_access.cairo">dict_access</a>
+module.</p>
+<section id="dictaccess">
+<h3><code class="docutils literal notranslate"><span class="pre">DictAccess</span></code><a class="headerlink" href="#dictaccess" title="Link to this heading">¶</a></h3>
+<p>A struct specifying the <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> memory structure. Cairo simulates dictionaries
+by an array of read-modify-write instructions, which are logged by the <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> struct.
+The consistency of such an array can be verified by applying <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code>.</p>
+<p>For libraries that abstract Cairo’s representation of dictionaries and allow a more
+standard dictionary interface than what will be shown here, see the
+<code class="docutils literal notranslate"><span class="pre">dict</span></code> and <code class="docutils literal notranslate"><span class="pre">default_dict</span></code> modules in the common library.</p>
+<p>The struct has the following members of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, the key of a key-value pair.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prev_value</span></code>, the previous value iof a key-value pair.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">new_value</span></code>, the current value of a key-value pair.</p></li>
+</ul>
+<p>In the example below, a dictionary is created by adding <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> structs to an array
+and manually incrementing a pointer to the end of the array.</p>
+<p><code class="docutils literal notranslate"><span class="pre">check_key_ratio()</span></code> checks that the value of key <code class="docutils literal notranslate"><span class="pre">b</span></code> is double the value of key <code class="docutils literal notranslate"><span class="pre">a</span></code>.
+This will only be enforced if we eventually call <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code>.</p>
+</section>
+</section>
+<section id="find-element">
+<span id="common-library-find-element"></span><h2><code class="docutils literal notranslate"><span class="pre">find_element</span></code><a class="headerlink" href="#find-element" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/find_element.cairo">find_element</a>
+module.</p>
+<section id="id10">
+<h3><code class="docutils literal notranslate"><span class="pre">find_element()</span></code><a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<p>Returns the pointer to an element in an array whose key matches a specified key. The function
+requires the implicit argument <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>. Note that if the array contains
+multiple elements with the requested key, the function may return a pointer to any of them.</p>
+<p>The function requires four explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">array_ptr</span></code>, a pointer to an array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_size</span></code>, the size (in memory cells) of each element in the array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_elms</span></code>, the number of elements in the array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, the key to look for (the key is assumed to be the first member of
+each element in the array).</p></li>
+</ul>
+<p>The function returns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_ptr</span></code>, the pointer to an element whose first memory cell is <code class="docutils literal notranslate"><span class="pre">key</span></code>
+(namely, <code class="docutils literal notranslate"><span class="pre">[elm_ptr]=key</span></code>).</p></li>
+</ul>
+<p>The function has the ability to receive the index of that element via a hint, which may
+save proving time. If <code class="docutils literal notranslate"><span class="pre">key</span></code> is not found then a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> exception
+will be raised while processing the library’s hint. Note that a malicious prover
+can’t cause <code class="docutils literal notranslate"><span class="pre">find_element()</span></code> to succeed by changing the hint, as the Cairo
+program will fail when the key is not present in the array.</p>
+</section>
+<section id="search-sorted-lower">
+<h3><code class="docutils literal notranslate"><span class="pre">search_sorted_lower()</span></code><a class="headerlink" href="#search-sorted-lower" title="Link to this heading">¶</a></h3>
+<p>Returns the pointer to the first element in the array whose first field is at least <code class="docutils literal notranslate"><span class="pre">key</span></code>.
+The array elements must be sorted by the first field in ascending order. If no such item exists,
+it returns a pointer to the end of the array (after the last item). The function requires the
+implicit argument <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>.</p>
+<p>The function accepts the arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">array_ptr</span></code>, a pointer to a sorted array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_size</span></code>, the size (in memory cells) of each element in the array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_elms</span></code>, the number of elements in the array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, the key lower bound (the key is assumed to be the first member of
+each element in the array).</p></li>
+</ul>
+<p>The function returns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_ptr</span></code>, the pointer to the first element whose key is greater or equal to the lower bound.</p></li>
+</ul>
+<p>Continuing with the example above, with lower bound <code class="docutils literal notranslate"><span class="pre">2</span></code>, the middle element is returned.</p>
+</section>
+<section id="search-sorted">
+<h3><code class="docutils literal notranslate"><span class="pre">search_sorted()</span></code><a class="headerlink" href="#search-sorted" title="Link to this heading">¶</a></h3>
+<p>Returns both the pointer to the first element in the array whose key matches a specified key, and
+an indicator for the success of the search. The array elements must be sorted by the
+first field in ascending order. If no such item exists, returns an undefined pointer,
+and <code class="docutils literal notranslate"><span class="pre">success=0</span></code>. The function requires the implicit argument <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>.</p>
+<p>The function accepts the arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">array_ptr</span></code>, the pointer to a sorted array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_size</span></code>, the size (in memory cells) of each element in the array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_elms</span></code>, the number of elements in the array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>, the key to look for (the key is assumed to be the first member of
+each element in the array).</p></li>
+</ul>
+<p>The function returns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_ptr</span></code>, the pointer to the first element whose first member is <code class="docutils literal notranslate"><span class="pre">key</span></code>,
+namely <code class="docutils literal notranslate"><span class="pre">[elm_ptr]</span> <span class="pre">=</span> <span class="pre">key</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">success</span></code>, a <code class="docutils literal notranslate"><span class="pre">felt</span></code> which equals <code class="docutils literal notranslate"><span class="pre">1</span></code> if the key was found and <code class="docutils literal notranslate"><span class="pre">0</span></code> otherwise.</p></li>
+</ul>
+<p>Continuing with the same example, since the array is sorted, searching for the key
+<code class="docutils literal notranslate"><span class="pre">5</span></code> leads to the last element.</p>
+</section>
+</section>
+<section id="set">
+<span id="common-library-set"></span><h2><code class="docutils literal notranslate"><span class="pre">set</span></code><a class="headerlink" href="#set" title="Link to this heading">¶</a></h2>
+<p>This section refers to the common library’s
+<a class="reference external" href="https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/set.cairo">set</a>
+module.</p>
+<section id="set-add">
+<h3><code class="docutils literal notranslate"><span class="pre">set_add()</span></code><a class="headerlink" href="#set-add" title="Link to this heading">¶</a></h3>
+<p>This function either appends an element to a given array or asserts that it exists.
+An honest prover should not append the element if it is already present,
+but this is not verified. The function requires the implicit arguments
+<code class="docutils literal notranslate"><span class="pre">set_end_ptr</span></code> (the pointer to the end of the list) and <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>.</p>
+<p>The function expects three explicit arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">set_ptr</span></code>, the pointer to the start of the list.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_size</span></code>, the size of each list element.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elm_ptr</span></code>, a pointer to the element being added.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="syntax.html">Syntax</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Common Library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Reference</a><ul>
+      <li>Previous: <a href="syntax.html" title="previous chapter">Syntax</a></li>
+      <li>Next: <a href="../sharp.html" title="next chapter">Using SHARP (Shared Prover)</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/reference/common_library.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

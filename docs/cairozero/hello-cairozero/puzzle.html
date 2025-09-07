@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The 15-puzzle &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The 15-puzzle - cont." href="dict.html" />
+    <link rel="prev" title="Programming in Cairo" href="intro.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="the-15-puzzle">
+<h1>The 15-puzzle<a class="headerlink" href="#the-15-puzzle" title="Link to this heading">¶</a></h1>
+<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/15_puzzle">15-puzzle</a> is a well-known game
+in which you are given a frame of 4x4 tiles where one of the tiles is missing, and the other
+are numbered 1-15. You have to slide tiles into the “hole” until you reach the “solved”
+configuration, in which the numbers are ordered.</p>
+<p>Below you can see an example of solving a very simple initial scenario.
+The first step is to slide 3 up into the hole, then 7, 8 and 12, which brings
+us to the “solved” configuration in which the empty tile is on the bottom-right corner
+and the numbers are sorted.</p>
+<img alt="An example of the 15-puzzle." src="../_images/15puzzle.png" />
+<p>We will use the 15-puzzle as an example – we will show how to write a Cairo program
+verifying a solution to the 15-puzzle (the initial state will be an input)
+thus allowing you to prove that you know the solution to that initial state (without necessarily
+revealing the solution to the person verifying the proof!).</p>
+<section id="what-we-need-to-check">
+<h2>What we need to check<a class="headerlink" href="#what-we-need-to-check" title="Link to this heading">¶</a></h2>
+<p>We will represent the solution as two lists:
+The first will contain the positions of the empty tile (row and column, where both are indexed
+starting from zero), so in the example above we have:
+<code class="docutils literal notranslate"><span class="pre">[(0,</span> <span class="pre">2),</span> <span class="pre">(1,</span> <span class="pre">2),</span> <span class="pre">(1,</span> <span class="pre">3),</span> <span class="pre">(2,</span> <span class="pre">3),</span> <span class="pre">(3,</span> <span class="pre">3)]</span></code>.
+The second list will contain the numbers of the tiles being moved, so we have:
+<code class="docutils literal notranslate"><span class="pre">[3,</span> <span class="pre">7,</span> <span class="pre">8,</span> <span class="pre">12]</span></code>.
+Note that the first list is always longer by one element.
+We will call the length of the second list <code class="docutils literal notranslate"><span class="pre">n_steps</span></code> (this is indeed the number of steps),
+and the length of the first list will be <code class="docutils literal notranslate"><span class="pre">n_steps</span> <span class="pre">+</span> <span class="pre">1</span></code>.</p>
+<p>We will verify that the following properties hold:</p>
+<ol class="arabic simple">
+<li><p>The locations in the first list make sense – all the numbers are between 0 and 3, and each
+consecutive pair represent adjacent locations.</p></li>
+<li><p>The numbers in the second list correspond to the values of the tiles according
+to the locations in the first list.
+For example, <code class="docutils literal notranslate"><span class="pre">3</span></code> is the tile at location <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">2)</span></code> in the
+initial state, and at location <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">2)</span></code> in the next state.
+Similarly <code class="docutils literal notranslate"><span class="pre">7</span></code> is the tile at location <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">3)</span></code> in the second state,
+and at location <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">2)</span></code> in the following state.</p></li>
+<li><p>The final state is the “solved” configuration.</p></li>
+</ol>
+<p>We will output the initial state, so that the verifiers of the proof will know
+what state we started from.</p>
+</section>
+<section id="the-location-struct">
+<h2>The Location struct<a class="headerlink" href="#the-location-struct" title="Link to this heading">¶</a></h2>
+<p>Let’s start by defining a struct that represents a tile location:</p>
+<p>The first line <code class="docutils literal notranslate"><span class="pre">struct</span> <span class="pre">Location</span> <span class="pre">{</span></code> starts the definition of a struct.
+Next we define two members <code class="docutils literal notranslate"><span class="pre">row</span></code> and <code class="docutils literal notranslate"><span class="pre">col</span></code>, both of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>.
+Finally we close the struct with the <code class="docutils literal notranslate"><span class="pre">}</span></code> character.
+For more information about structs, see <a class="reference internal" href="../how-cairozero-works/consts.html#typed-references"><span class="std std-ref">Typed references</span></a>.</p>
+</section>
+<section id="verifying-the-validity-of-a-single-location">
+<h2>Verifying the validity of a single location<a class="headerlink" href="#verifying-the-validity-of-a-single-location" title="Link to this heading">¶</a></h2>
+<p>We can now write a function that verifies that a location is valid:</p>
+<p>The expression <code class="docutils literal notranslate"><span class="pre">loc:</span> <span class="pre">Location*</span></code> instructs Cairo to interpret <code class="docutils literal notranslate"><span class="pre">loc</span></code> as the address
+of a <code class="docutils literal notranslate"><span class="pre">Location</span></code> instance.
+This means that it will expect that the value of the memory at address
+<code class="docutils literal notranslate"><span class="pre">loc</span></code> is the row of the location,
+and the value at address <code class="docutils literal notranslate"><span class="pre">loc</span> <span class="pre">+</span> <span class="pre">1</span></code> is the column.
+Cairo lets us address the two values using <code class="docutils literal notranslate"><span class="pre">loc.row</span></code> and <code class="docutils literal notranslate"><span class="pre">loc.col</span></code>.</p>
+<p>Next we see a definition of a temporary variable.
+We have mentioned above that Cairo memory is immutable, so the name
+“variable” may be misleading (as its value cannot change).
+A statement of the form <code class="docutils literal notranslate"><span class="pre">tempvar</span> <span class="pre">a</span> <span class="pre">=</span> <span class="pre">&lt;expr&gt;;</span></code>
+allocates one memory cell, names it <code class="docutils literal notranslate"><span class="pre">a</span></code>, and assigns it the value of <code class="docutils literal notranslate"><span class="pre">&lt;expr&gt;</span></code>.</p>
+<p>The scope of a temporary variable is restricted.
+For example, a temporary variable
+may be revoked due to jumps (e.g., if statements) or function calls.
+You can read more in <a class="reference internal" href="../how-cairozero-works/consts.html#revoked-references"><span class="std std-ref">Revoked references</span></a>.
+As you may recall, in the first section we mentioned that Cairo has
+some delicate points, this is one of them.
+As this function is very simple with no jumps and no calls to other functions
+using <code class="docutils literal notranslate"><span class="pre">tempvar</span></code> is fine here.</p>
+<p>For more information on temporary variables see <a class="reference internal" href="../how-cairozero-works/consts.html#tempvars"><span class="std std-ref">Temporary variables</span></a>.</p>
+<p>Cairo does not have a <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> operator.
+The reason is that in the Cairo machine the is-less-than operation is a complicated operation,
+so Cairo has a <em>builtin</em> called range-check that allows comparing values.
+(You can learn more about builtins and the range-check builtin <a class="reference internal" href="../how-cairozero-works/builtins.html#builtins"><span class="std std-ref">here</span></a>.
+There are also library functions to invoke it such as <code class="docutils literal notranslate"><span class="pre">assert_nn_le()</span></code>, which
+gets two arguments x and y and verifies
+that <span class="math notranslate nohighlight">\(0 \leq x \leq y\)</span>).
+Instead, we chose to use a simple mathematical trick that says that if we multiply
+numbers and get zero, one of them must be zero. This means that if
+<code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">*</span> <span class="pre">(row</span> <span class="pre">-</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">(row</span> <span class="pre">-</span> <span class="pre">2)</span> <span class="pre">*</span> <span class="pre">(row</span> <span class="pre">-</span> <span class="pre">3)</span> <span class="pre">=</span> <span class="pre">0</span></code>
+then either <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">=</span> <span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">=</span> <span class="pre">0</span></code> (so <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">=</span> <span class="pre">1</span></code>),
+etc. This is exactly what we need.</p>
+<p>The last line in the function is <code class="docutils literal notranslate"><span class="pre">return();</span></code>, unlike high-level languages
+in which the return statement is implicit, you <strong>must</strong> explicitly
+use <code class="docutils literal notranslate"><span class="pre">return()</span></code> at the end of the function even if there are no return
+values.</p>
+</section>
+<section id="verifying-two-consecutive-locations">
+<h2>Verifying two consecutive locations<a class="headerlink" href="#verifying-two-consecutive-locations" title="Link to this heading">¶</a></h2>
+<p>Let’s continue with verifying that two consecutive locations are adjacent:
+If we look at the difference between the two location we expect to see
+one of <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1),</span> <span class="pre">(0,</span> <span class="pre">-1),</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">(-1,</span> <span class="pre">0)</span></code>. For example,
+the first two locations in the example above are <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">2)</span></code> and <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">2)</span></code>
+and indeed <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">2)</span> <span class="pre">-</span> <span class="pre">(1,</span> <span class="pre">2)</span> <span class="pre">=</span> <span class="pre">(-1,</span> <span class="pre">0)</span></code>.</p>
+<p>This function uses local variables.
+These are similar to temporary variables,
+except that the scope in which they can be accessed is much less restricted –
+you can access them starting from their definition up to the end of the function.</p>
+<p>The line <code class="docutils literal notranslate"><span class="pre">alloc_locals;</span></code> is part of Cairo’s <code class="docutils literal notranslate"><span class="pre">local</span></code> mechanism. It allocates
+the memory required for the local variables of the function.
+Usually, this should be the first statement in a function which uses local variables.
+If you try to use local variables without that line,
+the compilation will fail.</p>
+<p>So if the compiler knows when I’m using local variables, why can’t it add that line for me?
+For two reasons:</p>
+<ol class="arabic simple">
+<li><p>Cairo is an explicit language – in most cases it doesn’t automatically add instructions
+unless the code explicitly says so.</p></li>
+<li><p>In some cases it is possible to avoid this statement, and allocate the required memory manually
+by increasing the <code class="docutils literal notranslate"><span class="pre">ap</span></code> register
+(you can read about Cairo’s registers <a class="reference internal" href="../how-cairozero-works/cairo_intro.html#registers"><span class="std std-ref">here</span></a>) as part of
+other instructions. In other cases it makes sense to place it in a different part of
+the code. You can read more about it <a class="reference internal" href="../how-cairozero-works/consts.html#local-vars"><span class="std std-ref">here</span></a>.</p></li>
+</ol>
+<p>Let’s go over the flow of the function:
+First, we compute the row and column differences (recall that we expect them to be -1, 0 or 1).</p>
+<p>Then, if the row is the same, the column difference must be either -1 or 1 (which is equivalent
+to <code class="docutils literal notranslate"><span class="pre">col_diff</span> <span class="pre">*</span> <span class="pre">col_diff</span> <span class="pre">=</span> <span class="pre">1</span></code>). And if it’s not zero, then the column must be the same
+and the row difference must be -1 or 1.</p>
+<section id="references-temporary-variables-and-local-variables">
+<h3>References, temporary variables and local variables<a class="headerlink" href="#references-temporary-variables-and-local-variables" title="Link to this heading">¶</a></h3>
+<p>A <a class="reference internal" href="../how-cairozero-works/consts.html#references"><span class="std std-ref">reference</span></a> is defined using a <code class="docutils literal notranslate"><span class="pre">let</span></code> statement,
+such as <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y;</span></code>.
+You should think of <code class="docutils literal notranslate"><span class="pre">x</span></code> as an alias to the expression <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span></code>, which means that
+the instruction <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y;</span></code> by itself will not cause any computation to be performed.
+On the other hand, a later instruction such as <code class="docutils literal notranslate"><span class="pre">assert</span> <span class="pre">x</span> <span class="pre">*</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">1;</span></code> will turn into
+<code class="docutils literal notranslate"><span class="pre">assert</span> <span class="pre">(y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y)</span> <span class="pre">*</span> <span class="pre">(y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y)</span> <span class="pre">=</span> <span class="pre">1;</span></code>.
+The scope in which a reference is defined is derived from the scope in which the aliased expression
+is defined.</p>
+<p>Note: the syntax <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">foo(...)</span></code> is an exception to the above –
+it calls <code class="docutils literal notranslate"><span class="pre">foo()</span></code> immediately
+(unlike other <code class="docutils literal notranslate"><span class="pre">let</span></code> statements, which do not result in actual computation),
+and creates a reference <code class="docutils literal notranslate"><span class="pre">x</span></code> to the return value of foo().
+In general, references cannot contain function calls.</p>
+<p>Temporary and local variables are special cases of a reference.
+They point to a specific memory cell, which stores the result of a computation.
+Thus the statement <code class="docutils literal notranslate"><span class="pre">tempvar</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y;</span></code> <strong>will</strong> invoke the computation, and <code class="docutils literal notranslate"><span class="pre">x</span></code>
+will be an alias to the memory cell containing the result, rather than the
+<em>expression</em> <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">*</span> <span class="pre">y</span></code>.</p>
+<p>Temporary variables do not require prior allocation of memory, but their scope is restricted.
+Local variables are placed at the beginning of the function stack, so they require prior allocation
+using the instruction <code class="docutils literal notranslate"><span class="pre">alloc_locals</span></code>, but they can be accessed throughout the entire
+execution of the function.</p>
+<p>The scope of the result of a function call is similar to that of a temporary variable.
+If you need to access the returned value later, you should copy the result to a local variable.</p>
+<p>If you get an error that your temporary variable was revoked, you can try to make it a local
+variable instead.</p>
+</section>
+</section>
+<section id="verifying-the-list-of-locations">
+<h2>Verifying the list of locations<a class="headerlink" href="#verifying-the-list-of-locations" title="Link to this heading">¶</a></h2>
+<p>Let’s wrap it in a loop (recursion, to be precise) that calls those two functions
+on the entire location list.</p>
+</section>
+<section id="adding-a-dummy-main-function">
+<h2>Adding a dummy main function<a class="headerlink" href="#adding-a-dummy-main-function" title="Link to this heading">¶</a></h2>
+<p>Before we continue, let’s write a dummy main function that will allow us to run
+<code class="docutils literal notranslate"><span class="pre">verify_location_list</span></code> (we will remove it later, and replace it with the real
+main function):</p>
+<p>This function uses a tuple to define and store the list of <code class="docutils literal notranslate"><span class="pre">Location</span></code> elements. Tuples are
+ordered, finite lists that can contain any combination of valid types, for example, five
+<code class="docutils literal notranslate"><span class="pre">Location</span></code> structs. Each element may be accessed with a zero-based index (e.g., <code class="docutils literal notranslate"><span class="pre">loc_tuple[2]</span></code>
+is the third element. See <a class="reference internal" href="../how-cairozero-works/consts.html#tuples"><span class="std std-ref">Tuples</span></a>).</p>
+<p>At the beginning of the function we allocate 5 locations, using a typed local variable.
+Cairo looks for the constant <code class="docutils literal notranslate"><span class="pre">Location.SIZE</span></code> to find how many cells are
+required for each of the variables, and then allocates them in the order of definition.
+Since <code class="docutils literal notranslate"><span class="pre">loc_tuple</span></code> is a tuple of 5 locations, Cairo allocates <code class="docutils literal notranslate"><span class="pre">5</span> <span class="pre">*</span> <span class="pre">Location.SIZE</span></code> memory
+cells. Each <code class="docutils literal notranslate"><span class="pre">Location</span></code> instance is assigned some coordinates (according to the example above).</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">verify_location_list</span></code> requires a pointer to a list of locations,
+we pass <code class="docutils literal notranslate"><span class="pre">&amp;loc_tuple</span></code>, which represents the address in memory of <code class="docutils literal notranslate"><span class="pre">loc_tuple</span></code>. Since the type
+of <code class="docutils literal notranslate"><span class="pre">&amp;loc_tuple</span></code> is a pointer to a tuple rather than <code class="docutils literal notranslate"><span class="pre">Location*</span></code>, we need the cast operation
+to instruct the compiler to treat this address as <code class="docutils literal notranslate"><span class="pre">Location*</span></code>. See <a class="reference internal" href="../how-cairozero-works/consts.html#casting"><span class="std std-ref">Casting</span></a> for
+more information.</p>
+<p>For technical reasons, when Cairo needs to retrieve the address of a local variable
+(<code class="docutils literal notranslate"><span class="pre">&amp;loc_tuple</span></code>), it needs to be told the value of the frame pointer register, <code class="docutils literal notranslate"><span class="pre">fp</span></code>
+(see <a class="reference internal" href="../how-cairozero-works/functions.html#fp-register"><span class="std std-ref">The fp register</span></a>).
+This can be done by the statement <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">(__fp__,</span> <span class="pre">_)</span> <span class="pre">=</span> <span class="pre">get_fp_and_pc()</span></code>
+which calls the library function <code class="docutils literal notranslate"><span class="pre">get_fp_and_pc()</span></code> to retrieve <code class="docutils literal notranslate"><span class="pre">fp</span></code>.
+The result is named <code class="docutils literal notranslate"><span class="pre">__fp__</span></code> which is the name Cairo looks for
+when it has to know <code class="docutils literal notranslate"><span class="pre">fp</span></code>.
+If you forget to write this line, you may get an error of the form:
+<code class="docutils literal notranslate"><span class="pre">Using</span> <span class="pre">the</span> <span class="pre">value</span> <span class="pre">of</span> <span class="pre">fp</span> <span class="pre">directly,</span> <span class="pre">requires</span> <span class="pre">defining</span> <span class="pre">a</span> <span class="pre">variable</span> <span class="pre">named</span> <span class="pre">__fp__.</span></code></p>
+<p>The syntax <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">(...)</span> <span class="pre">=</span> <span class="pre">foo(...)</span></code> calls a function <code class="docutils literal notranslate"><span class="pre">foo</span></code> which returns a tuple of values
+and stores each entry of that tuple into a separate variable.
+The symbol <code class="docutils literal notranslate"><span class="pre">_</span></code> can be used to skip an entry.</p>
+<p>Again, don’t forget to return at the end!</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>Play with the values of the location coordinates and make sure the program fails
+if they represent illegal values.</p>
+<p>For example, try to change <code class="docutils literal notranslate"><span class="pre">loc_tuple[0].row</span></code> from 0 to 10.
+You should see that the assert in <code class="docutils literal notranslate"><span class="pre">verify_valid_location</span></code> fails.
+Or you can change this value to 1, which will make the first transition
+illegal (the empty tile cannot stay in the same place).</p>
+</section>
+<section id="id1">
+<h3>Exercise<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<p>Modify <code class="docutils literal notranslate"><span class="pre">verify_location_list</span></code> so that it checks that the last location is
+indeed <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">3)</span></code>.</p>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Hello, Cairo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Programming in Cairo</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">The 15-puzzle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html">Program input and hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html">Voting system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Hello, Cairo</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Programming in Cairo</a></li>
+      <li>Next: <a href="dict.html" title="next chapter">The 15-puzzle - cont.</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/puzzle.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

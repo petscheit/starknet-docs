@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Object allocation &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Scope attributes" href="scope_attributes.html" />
+    <link rel="prev" title="Types" href="types.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="object-allocation">
+<h1>Object allocation<a class="headerlink" href="#object-allocation" title="Link to this heading">¶</a></h1>
+<p>Cairo has a few ways of storing an object in memory and getting a pointer
+to it (which can be used by other functions):</p>
+<ul class="simple">
+<li><p>Memory segment allocation: The <a class="reference internal" href="#alloc"><span class="std std-ref">alloc()</span></a> function can be used
+to create an arbitrary-length array.</p></li>
+<li><p>Single item allocation: The <a class="reference internal" href="#new-operator"><span class="std std-ref">new</span></a> operator initializes a single item
+and returns a pointer to it.</p></li>
+<li><p>Local variables: You can allocate a local variable and retrieve its address.
+See <a class="reference internal" href="functions.html#retrieving-registers"><span class="std std-ref">Accessing the values of the registers</span></a>.</p></li>
+</ul>
+<section id="alloc">
+<span id="id1"></span><h2>alloc()<a class="headerlink" href="#alloc" title="Link to this heading">¶</a></h2>
+<p>The standard library function <code class="docutils literal notranslate"><span class="pre">alloc()</span></code> may
+be used to “dynamically” allocate a new memory segment (see <a class="reference internal" href="segments.html#segments"><span class="std std-ref">Segments</span></a>).
+This segment can be used to store an array or a single element.</p>
+<p>For example:</p>
+</section>
+<section id="the-new-operator">
+<span id="new-operator"></span><h2>The “new” operator<a class="headerlink" href="#the-new-operator" title="Link to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">new</span></code> operator takes an expression and pushes it onto the stack and returns a pointer to
+the memory address of that object. For example:</p>
+<p>Note that unlike <code class="docutils literal notranslate"><span class="pre">alloc()</span></code>, which allocates a new memory segment, the <code class="docutils literal notranslate"><span class="pre">new</span></code> operator
+creates the object in the execution segment (see <a class="reference internal" href="segments.html#segments"><span class="std std-ref">Segments</span></a>). Since memory in Cairo is never
+freed, both approaches have a similar outcome – you can use the pointer even after the function
+ends.
+On the other hand, this means that the <code class="docutils literal notranslate"><span class="pre">new</span></code> operator can’t be used for an arbitrary-sized arrays.
+The <code class="docutils literal notranslate"><span class="pre">new</span></code> operator is useful since it allows you to allocate the memory and initialize the object
+in one instruction. In fact, you can use multiple <code class="docutils literal notranslate"><span class="pre">new</span></code> operators in the same line if necessary.</p>
+<p>This is theoretically equivalent to the following code:</p>
+<p>However, <code class="docutils literal notranslate"><span class="pre">&amp;obj</span></code> is currently not supported for <code class="docutils literal notranslate"><span class="pre">tempvar</span></code>, so this code does not compile.</p>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">new</span></code> to allocate a fixed-size array using tuples:</p>
+<p>For arrays of structs you’ll need to explicitly cast the pointer:</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="types.html" title="previous chapter">Types</a></li>
+      <li>Next: <a href="scope_attributes.html" title="next chapter">Scope attributes</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/object_allocation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Builtins and implicit arguments &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Define word" href="define_word.html" />
+    <link rel="prev" title="Nondeterministic jumps" href="non_deterministic_jumps.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="builtins-and-implicit-arguments">
+<span id="builtins"></span><h1>Builtins and implicit arguments<a class="headerlink" href="#builtins-and-implicit-arguments" title="Link to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>Builtins are predefined optimized low-level execution units which are added to the Cairo CPU board
+to perform predefined computations
+which are expensive to perform in vanilla Cairo (e.g., range-checks, Pedersen hash, ECDSA, …).</p>
+<p>The communication between the CPU and the builtins is done through memory:
+each builtin is assigned a continuous area in the memory and applies some constraints
+(depending on the builtin definition) on the memory cells in that area.
+For example, the Pedersen builtin will enforce that:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[p + 2] = hash([p + 0], [p + 1])
+[p + 5] = hash([p + 3], [p + 4])
+[p + 8] = hash([p + 6], [p + 7])
+...
+</pre></div>
+</div>
+<p>Cairo code may read/write from those memory cells to “invoke” the builtin.
+The following code verifies that <code class="docutils literal notranslate"><span class="pre">hash(x,</span> <span class="pre">y)</span> <span class="pre">==</span> <span class="pre">z</span></code>:</p>
+<p>Once we use the addresses <code class="docutils literal notranslate"><span class="pre">[p</span> <span class="pre">+</span> <span class="pre">0]</span></code>, <code class="docutils literal notranslate"><span class="pre">[p</span> <span class="pre">+</span> <span class="pre">1]</span></code>, <code class="docutils literal notranslate"><span class="pre">[p</span> <span class="pre">+</span> <span class="pre">2]</span></code> in order to compute the first hash
+we cannot use them again to compute a different hash (since Cairo memory is immutable). Instead,
+we should use <code class="docutils literal notranslate"><span class="pre">[p</span> <span class="pre">+</span> <span class="pre">3]</span></code>, <code class="docutils literal notranslate"><span class="pre">[p</span> <span class="pre">+</span> <span class="pre">4]</span></code>, <code class="docutils literal notranslate"><span class="pre">[p</span> <span class="pre">+</span> <span class="pre">5]</span></code>, and so on.
+This means that we have to keep track of a pointer to the next unused builtin instance.
+The convention is that functions which use the builtin should get that pointer as an argument
+and return an updated pointer to the next unused instance.
+A more complete version of the example above would look like this:</p>
+<p>We can use <a class="reference internal" href="consts.html#typed-references"><span class="std std-ref">Typed references</span></a> with the type <code class="docutils literal notranslate"><span class="pre">HashBuiltin</span></code> from
+<code class="docutils literal notranslate"><span class="pre">starkware.cairo.common.cairo_builtins</span></code> as follows:</p>
+</section>
+<section id="implicit-arguments">
+<span id="id1"></span><h2>Implicit arguments<a class="headerlink" href="#implicit-arguments" title="Link to this heading">¶</a></h2>
+<p>If a function <code class="docutils literal notranslate"><span class="pre">foo()</span></code> calls <code class="docutils literal notranslate"><span class="pre">hash2()</span></code>, <code class="docutils literal notranslate"><span class="pre">foo()</span></code> must also get and return the
+builtin pointer (<code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>) and so does every function calling <code class="docutils literal notranslate"><span class="pre">foo()</span></code>.
+Since this pattern is so common, Cairo has syntactic sugar for it, called “Implicit arguments”.
+Take a look at the following implementation of <code class="docutils literal notranslate"><span class="pre">hash2</span></code>
+(note the function declaration in particular):</p>
+<p>The curly braces declare <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> as an <em>implicit argument</em>. This automatically adds
+an argument <strong>and</strong> a return value to the function.
+If you’re using the high-level <code class="docutils literal notranslate"><span class="pre">return</span></code> statement, you don’t have to explicitly return
+<code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>. The Cairo compiler just returns the current binding of the <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>
+reference. Since <code class="docutils literal notranslate"><span class="pre">hash2</span></code> has to return the pointer to the next available instance,
+we added the <a class="reference internal" href="consts.html#reference-rebinding"><span class="std std-ref">reference rebinding</span></a>:
+<code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">hash_ptr</span> <span class="pre">=</span> <span class="pre">hash_ptr</span> <span class="pre">+</span> <span class="pre">HashBuiltin.SIZE;</span></code>.
+Note that its only effect is on the return statement (implicitly).</p>
+</section>
+<section id="calling-a-function-that-gets-implicit-arguments">
+<span id="calling-with-implicit-arguments"></span><h2>Calling a function that gets implicit arguments<a class="headerlink" href="#calling-a-function-that-gets-implicit-arguments" title="Link to this heading">¶</a></h2>
+<p>Cairo’s standard library includes <code class="docutils literal notranslate"><span class="pre">hash2</span></code> in the module <code class="docutils literal notranslate"><span class="pre">starkware.cairo.common.hash</span></code>.
+You can call <code class="docutils literal notranslate"><span class="pre">hash2()</span></code> in a few ways:</p>
+<ol class="arabic">
+<li><p>Explicitly, using <code class="docutils literal notranslate"><span class="pre">{x=y}</span></code>, where <code class="docutils literal notranslate"><span class="pre">x</span></code> is the name of the implicit argument and <code class="docutils literal notranslate"><span class="pre">y</span></code> is the
+name of the reference to bind to it. We use the word “bind” since <code class="docutils literal notranslate"><span class="pre">y</span></code> is not merely passed to
+<code class="docutils literal notranslate"><span class="pre">foo</span></code> – after the call, <code class="docutils literal notranslate"><span class="pre">y</span></code> will be rebound to the value returned by <code class="docutils literal notranslate"><span class="pre">foo</span></code>
+for the implicit argument <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>Note that you must use named arguments with implicit arguments.</p>
+</li>
+<li><p>Implicitly, if the calling function also has an <strong>implicit</strong> argument named <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>:</p>
+<p>Trying to use <code class="docutils literal notranslate"><span class="pre">hash2(1,</span> <span class="pre">2)</span></code> if there’s is no reference named <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>,
+or this reference is not an implicit argument (or marked using a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement as you’ll see
+below) will fail.</p>
+</li>
+<li><p>Implicitly, inside a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement on a reference named <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>:</p>
+<p>The purpose of the <code class="docutils literal notranslate"><span class="pre">with</span></code> statement is to make the code more readable:
+The call to <code class="docutils literal notranslate"><span class="pre">hash2</span></code> <strong>changes</strong> (rebinds) the reference <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>, even though
+<code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> is not mentioned in that line. While it is extremely convenient
+to program this way, it makes it difficult to understand which function call changes what
+variable.
+Therefore, the only references that may be implicitly changed are implicit arguments and
+references mentioned in a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement.</p>
+</li>
+</ol>
+<p>Using the implicit argument mechanism, and helper functions, such as <code class="docutils literal notranslate"><span class="pre">hash2</span></code>,
+you don’t have to worry about the builtin pointer – all you have to do is add <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>
+as an implicit argument and then you can call <code class="docutils literal notranslate"><span class="pre">hash2</span></code> without explicitly passing
+the pointer.</p>
+</section>
+<section id="revoked-implicit-arguments">
+<span id="id2"></span><h2>Revoked implicit arguments<a class="headerlink" href="#revoked-implicit-arguments" title="Link to this heading">¶</a></h2>
+<p>Try to compile the following code:</p>
+<p>You should get the following error:</p>
+<p>To understand why you got this error, you should note that implicit arguments
+are implemented as references and as such they can be <a class="reference internal" href="consts.html#revoked-references"><span class="std std-ref">revoked</span></a>.</p>
+<p>In this case, the line <code class="docutils literal notranslate"><span class="pre">hash2(1,</span> <span class="pre">2)</span></code> rebinds <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> to the value returned
+by <code class="docutils literal notranslate"><span class="pre">hash2</span></code> (due to the implicit argument of <code class="docutils literal notranslate"><span class="pre">hash2</span></code>).
+This reference is relative to the <code class="docutils literal notranslate"><span class="pre">ap</span></code> register.
+The call to <code class="docutils literal notranslate"><span class="pre">foo()</span></code> revokes this reference since the compiler cannot track the expected change
+to the <code class="docutils literal notranslate"><span class="pre">ap</span></code> register. On the other hand, the line <code class="docutils literal notranslate"><span class="pre">hash2(3,</span> <span class="pre">4)</span></code> requires this reference,
+which is the reason we got the error.</p>
+<p>To solve it, you can add the line <code class="docutils literal notranslate"><span class="pre">local</span> <span class="pre">hash_ptr:</span> <span class="pre">HashBuiltin*</span> <span class="pre">=</span> <span class="pre">hash_ptr;</span></code>
+which copies the value of the reference
+to a local variable (and rebinds the reference accordingly) just after the call to <code class="docutils literal notranslate"><span class="pre">hash2(1,</span> <span class="pre">2)</span></code>
+(where the revoked reference was defined).
+In fact, it suffices to add <code class="docutils literal notranslate"><span class="pre">alloc_locals;</span></code> to the function, and the Cairo compiler will
+automatically add this instruction for you.</p>
+<p>After the line <code class="docutils literal notranslate"><span class="pre">local</span> <span class="pre">hash_ptr:</span> <span class="pre">HashBuiltin*</span> <span class="pre">=</span> <span class="pre">hash_ptr;</span></code> the reference <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> is relative to
+<code class="docutils literal notranslate"><span class="pre">fp</span></code> (rather than <code class="docutils literal notranslate"><span class="pre">ap</span></code>) so it’s not revoked by the call to <code class="docutils literal notranslate"><span class="pre">foo()</span></code>.</p>
+<p>The compiler is not always able to add such instructions automatically, for example where
+if-blocks and jumps are involved. In such cases you will have to add them manually.
+Consider the following example:</p>
+<p>In this case, the <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> reference is revoked because its binding depends on
+whether the branch <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">0</span></code> was taken or not.
+If <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">0</span></code>, the reference points to the value returned from <code class="docutils literal notranslate"><span class="pre">hash2(1,</span> <span class="pre">2)</span></code> and otherwise
+it points to the implicit argument of <code class="docutils literal notranslate"><span class="pre">bar</span></code>.
+A possible solution is to rebind <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> <em>at the end</em> of both branches
+(this necessitates adding an explicit <code class="docutils literal notranslate"><span class="pre">else</span></code> block) using a <a class="reference internal" href="consts.html#tempvars"><span class="std std-ref">temporary variable</span></a>:</p>
+<p>The fact that the temporary variable is defined at the end of both branches implies
+that after the <code class="docutils literal notranslate"><span class="pre">if</span></code> statement is completed,
+the <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> reference is at the same location with respect to <code class="docutils literal notranslate"><span class="pre">ap</span></code>
+whether <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">0</span></code> or not
+(in our case the reference is going to be <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span></code>).</p>
+</section>
+<section id="layouts">
+<span id="id3"></span><h2>Layouts<a class="headerlink" href="#layouts" title="Link to this heading">¶</a></h2>
+<p>Cairo supports a few possible layouts.
+Each layout specifies which of the different builtins exist
+and how many instances of that builtin can be used.
+This is measured as the ratio between the number of instructions and
+the number of available builtin instances. For example, if this ratio of a hash builtin is 16,
+it means that the number of hash invocations can be at most <code class="docutils literal notranslate"><span class="pre">n_steps</span> <span class="pre">/</span> <span class="pre">16</span></code> where
+<code class="docutils literal notranslate"><span class="pre">n_steps</span></code> is the number of Cairo steps.
+If your program needs more hash invocations, you can either increase the number of steps
+(using the <code class="docutils literal notranslate"><span class="pre">--steps</span></code> flag) or choose a layout with a smaller ratio.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">plain</span></code> layout, which is the default layout, has no builtins.
+Thus, if your program needs to write output, compute the Pedersen hash or use another builtin,
+you will need to call <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> with another layout, which is specified using the
+<code class="docutils literal notranslate"><span class="pre">--layout</span></code> flag.</p>
+<section id="the-small-layout">
+<h3>The <code class="docutils literal notranslate"><span class="pre">small</span></code> layout<a class="headerlink" href="#the-small-layout" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">small</span></code> layout (<code class="docutils literal notranslate"><span class="pre">--layout=small</span></code>) includes the following builtins:</p>
+<p><strong>Note</strong>: Since the number of <code class="docutils literal notranslate"><span class="pre">ECDSA</span></code> instances is <code class="docutils literal notranslate"><span class="pre">n_steps</span> <span class="pre">/</span> <span class="pre">512</span></code> and
+it must be an integer, it implies that the number of steps must be divisible by <code class="docutils literal notranslate"><span class="pre">512</span></code>
+when the <code class="docutils literal notranslate"><span class="pre">small</span></code> layout is used.</p>
+</section>
+</section>
+<section id="the-builtins-directive">
+<h2>The <code class="docutils literal notranslate"><span class="pre">%builtins</span></code> directive<a class="headerlink" href="#the-builtins-directive" title="Link to this heading">¶</a></h2>
+<p>The  <code class="docutils literal notranslate"><span class="pre">%builtins</span></code> directive specifies which builtins are used by the program.
+Each builtin adds an argument to <code class="docutils literal notranslate"><span class="pre">main()</span></code> and requires a return value.
+Those can be replaced by adding implicit arguments to <code class="docutils literal notranslate"><span class="pre">main</span></code>.
+For example,</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p>Write a function that gets a pointer to a hash function builtin and computes
+the hash of three values as <span class="math notranslate nohighlight">\(H(H(x, y), z)\)</span> (recall that it should return the
+updated pointer).</p>
+<ol class="loweralpha simple">
+<li><p>Use the builtin directly without <code class="docutils literal notranslate"><span class="pre">hash2</span></code>. Don’t use implicit arguments.</p></li>
+<li><p>Rewrite your function so that it gets the builtin pointer as an implicit argument
+and uses the standard library function <code class="docutils literal notranslate"><span class="pre">hash2</span></code>.</p></li>
+</ol>
+</li>
+<li><p>Write a main function calling your function.</p></li>
+<li><p>Write a function that gets a pointer to an array and computes its hash chain:</p>
+<div class="math notranslate nohighlight">
+\[H(\cdots H(H(x_0,x_1),x_2), \ldots, x_n)\]</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="range-checks">
+<h2>Range-checks<a class="headerlink" href="#range-checks" title="Link to this heading">¶</a></h2>
+<p>The range-check builtin is used to check that a field element is within the range
+<span class="math notranslate nohighlight">\([0, 2^{128})\)</span>. Namely, it forces that</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>0 &lt;= [p + 0] &lt; 2^128
+0 &lt;= [p + 1] &lt; 2^128
+0 &lt;= [p + 2] &lt; 2^128
+...
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">p</span></code> is the beginning address of the builtin.
+Checking that a value, <code class="docutils literal notranslate"><span class="pre">x</span></code>, is in a smaller range <span class="math notranslate nohighlight">\([0, \text{BOUND}]\)</span>
+(where <span class="math notranslate nohighlight">\(\text{BOUND} &lt; 2^{128}\)</span>) can be done using two range-check instances:</p>
+<ol class="arabic simple">
+<li><p>Use one instance to verify that <span class="math notranslate nohighlight">\(0 \leq x &lt; 2^{128}\)</span>.</p></li>
+<li><p>Use another instance to verify that <span class="math notranslate nohighlight">\(0 \leq \text{BOUND} - x &lt; 2^{128}\)</span>.</p></li>
+</ol>
+<p><strong>Note:</strong> Talking about <span class="math notranslate nohighlight">\(x \geq 0\)</span> (without an upper bound, such as <span class="math notranslate nohighlight">\(x &lt; 2^{128}\)</span>)
+is not well defined –
+it depends on the interpretation of the field elements as integers
+(for example, one could interpret the field elements in the range <span class="math notranslate nohighlight">\([0, p)\)</span>
+which will imply that all the elements are nonnegative, or in the range
+<span class="math notranslate nohighlight">\([-\lfloor p/2 \rfloor, \lfloor p/2 \rfloor]\)</span> in which half of the elements are nonnegative).
+On the other hand, once we bound <span class="math notranslate nohighlight">\(x\)</span> from both sides (<span class="math notranslate nohighlight">\(0 \leq x &lt; 2^{128}\)</span>),
+the range becomes well defined.</p>
+<section id="id4">
+<h3>Exercise<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Write a function <code class="docutils literal notranslate"><span class="pre">foo(x)</span></code> that verifies that <span class="math notranslate nohighlight">\(0 \leq x \leq 1000\)</span>.</p></li>
+<li><p>Why isn’t checking that <span class="math notranslate nohighlight">\(0 \leq 1000 - x &lt; 2^{128}\)</span> enough?</p></li>
+<li><p>Write a function <code class="docutils literal notranslate"><span class="pre">foo(x,</span> <span class="pre">y,</span> <span class="pre">z,</span> <span class="pre">w)</span></code> that verifies that
+<span class="math notranslate nohighlight">\(0 \leq x \leq y \leq z \leq w &lt; 2^{128}\)</span> using as few instances of the bulitin as you can.</p></li>
+<li><p>How can you check that <span class="math notranslate nohighlight">\(0 \leq x &lt; 2^{200}\)</span>? (hint: you will need more than one instance
+of the builtin)</p></li>
+</ol>
+</section>
+<section id="divisibility-testing">
+<h3>Divisibility testing<a class="headerlink" href="#divisibility-testing" title="Link to this heading">¶</a></h3>
+<p>Divisibility is a question of whether an integer <code class="docutils literal notranslate"><span class="pre">x</span></code> is divisible by <code class="docutils literal notranslate"><span class="pre">y</span></code> without remainder
+(namely, is there an integer <code class="docutils literal notranslate"><span class="pre">z</span></code> such that <span class="math notranslate nohighlight">\(x = y \cdot z\)</span>).
+A special case is testing whether <code class="docutils literal notranslate"><span class="pre">x</span></code> is even (divisible by 2) or odd.
+The question of (integer) divisibility is not well-defined in finite fields:
+<span class="math notranslate nohighlight">\(P - 1\)</span> is an even integer, but it is also used to represent -1, which is clearly odd.
+One way to overcome this is to force a range. For example, the question “Is the integer
+<span class="math notranslate nohighlight">\(0 \leq x &lt; 2^{128}\)</span> divisible by 3?” is well defined.</p>
+</section>
+<section id="id5">
+<h3>Exercise<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<p>Write a function that verifies that <code class="docutils literal notranslate"><span class="pre">x</span></code> is within the range <span class="math notranslate nohighlight">\([0, 2^{128})\)</span> and is divisible by
+3.</p>
+</section>
+<section id="integer-division">
+<span id="id6"></span><h3>Integer division<a class="headerlink" href="#integer-division" title="Link to this heading">¶</a></h3>
+<p>We can use the range-check builtin in order to compute integer division with remainder.
+The goal is to compute <span class="math notranslate nohighlight">\(q = \lfloor x / y \rfloor\)</span> and <span class="math notranslate nohighlight">\(r = x \text{ mod } y\)</span>.
+We can rewrite it as <span class="math notranslate nohighlight">\(x = q \cdot y + r\)</span> (as integers) where <span class="math notranslate nohighlight">\(0 \leq r &lt; y\)</span>.
+When we test <span class="math notranslate nohighlight">\(x = q \cdot y + r\)</span> we need to be careful –
+we need to make sure the computation will not overflow.
+For simplicity we will assume here that <span class="math notranslate nohighlight">\(0 \leq x, y &lt; 2^{64}\)</span>
+(if this is not the case, you can modify the code according to your constraints).</p>
+<p>The following code computes <span class="math notranslate nohighlight">\(q\)</span> and <span class="math notranslate nohighlight">\(r\)</span> (and validates <span class="math notranslate nohighlight">\(0 \leq x, y &lt; 2^{64}\)</span>)
+assuming that <span class="math notranslate nohighlight">\(|\mathbb{F}| &gt; 2^{128}\)</span>:</p>
+</section>
+<section id="id7">
+<h3>Exercise<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<p>Convince yourself that the code is correct:</p>
+<ol class="arabic simple">
+<li><p>Completeness – if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are in range, all the range-checks will pass.</p></li>
+<li><p>Soundness – if all the range-checks pass, then the result is correct (assume a malicious prover
+which may ignore the hint, and run any hint it wants instead).
+Why is the assumption <span class="math notranslate nohighlight">\(|\mathbb{F}| &gt; 2^{128}\)</span> required? (recall that the equation
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">q</span> <span class="pre">*</span> <span class="pre">y</span> <span class="pre">+</span> <span class="pre">r</span></code> is checked modulo the field size).</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="non_deterministic_jumps.html" title="previous chapter">Nondeterministic jumps</a></li>
+      <li>Next: <a href="define_word.html" title="next chapter">Define word</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/builtins.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

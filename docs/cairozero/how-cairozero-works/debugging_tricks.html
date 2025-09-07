@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Debugging-related flags &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The program counter (pc)" href="program_counter.html" />
+    <link rel="prev" title="Introduction to Cairo" href="cairo_intro.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="debugging-related-flags">
+<span id="debugging-tricks"></span><h1>Debugging-related flags<a class="headerlink" href="#debugging-related-flags" title="Link to this heading">¶</a></h1>
+<p>Below are some flags for <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> that you may use to debug errors in your program. In addition
+to these flags, you can always add a <a class="reference internal" href="hints.html#hints"><span class="std std-ref">hint</span></a> with a print statement to output the value
+of a certain identifier or a memory cell.</p>
+<section id="print-info">
+<h2><code class="docutils literal notranslate"><span class="pre">--print_info</span></code><a class="headerlink" href="#print-info" title="Link to this heading">¶</a></h2>
+<p>Instructs <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> to print the info section, which contains the following information:</p>
+<ol class="arabic simple">
+<li><p>The number of executed steps.</p></li>
+<li><p>The number of used memory cells.</p></li>
+<li><p>The values of the registers at the end of the execution.</p></li>
+<li><p>The segment relocation table.</p></li>
+</ol>
+<p>Note that you may see values of the form <code class="docutils literal notranslate"><span class="pre">x:y</span></code> in the output (e.g., <code class="docutils literal notranslate"><span class="pre">4:2</span></code>).
+Those are relocatable values, see <a class="reference internal" href="segments.html#segments"><span class="std std-ref">Segments</span></a> for more information.</p>
+</section>
+<section id="print-memory">
+<h2><code class="docutils literal notranslate"><span class="pre">--print_memory</span></code><a class="headerlink" href="#print-memory" title="Link to this heading">¶</a></h2>
+<p>Prints the addresses and values of the memory cells that were assigned during execution.</p>
+<p>If you get an error that refers to a specific memory cell, it may be helpful to examine
+the value of that cell and the adjacent memory cells.</p>
+</section>
+<section id="steps">
+<h2><code class="docutils literal notranslate"><span class="pre">--steps</span></code><a class="headerlink" href="#steps" title="Link to this heading">¶</a></h2>
+<p>You can control the number of steps that <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> performs using the
+<code class="docutils literal notranslate"><span class="pre">--steps</span></code> flags. This is an optional parameter – if you don’t specify it,
+<code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> will run until the program ends (after the <code class="docutils literal notranslate"><span class="pre">ret</span></code> instruction called by <code class="docutils literal notranslate"><span class="pre">main()</span></code>).</p>
+</section>
+<section id="no-end">
+<h2><code class="docutils literal notranslate"><span class="pre">--no_end</span></code><a class="headerlink" href="#no-end" title="Link to this heading">¶</a></h2>
+<p>If you specify an exact number of steps, and the program does not end within that number of
+steps, <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> will throw an error (<code class="docutils literal notranslate"><span class="pre">End</span> <span class="pre">of</span> <span class="pre">program</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">reached</span></code>).
+You can instruct <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> to ignore this using the <code class="docutils literal notranslate"><span class="pre">--no_end</span></code> flag.
+Specifying the number of steps, combined with the <code class="docutils literal notranslate"><span class="pre">--no_end</span></code> flag can be used to debug a
+program, as it allows you to examine the values of the memory and registers after the program has
+run the specified amount of steps.</p>
+</section>
+<section id="debug-error">
+<h2><code class="docutils literal notranslate"><span class="pre">--debug_error</span></code><a class="headerlink" href="#debug-error" title="Link to this heading">¶</a></h2>
+<p>When an error occurs, the memory and the info sections are not printed by default.
+You may use the <code class="docutils literal notranslate"><span class="pre">--debug_error</span></code> to print them anyway.
+The idea is that by examining the values of the memory and the info sections, you may be able
+to better understand the source of the error.</p>
+</section>
+<section id="profile-output-profile-pb-gz">
+<h2><code class="docutils literal notranslate"><span class="pre">--profile_output</span> <span class="pre">profile.pb.gz</span></code><a class="headerlink" href="#profile-output-profile-pb-gz" title="Link to this heading">¶</a></h2>
+<p>Outputs a profile result file that can be viewed with <a class="reference external" href="https://github.com/google/pprof">pprof</a>.
+If you have <code class="docutils literal notranslate"><span class="pre">go</span></code> installed you can view the result using:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>--web<span class="w"> </span>profile.pb.gz
+</pre></div>
+</div>
+<p>Alternatively, you can use the <code class="docutils literal notranslate"><span class="pre">golang</span></code> docker image (you’ll need to install docker first):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>-v<span class="nv">$PWD</span>:/tmp<span class="w"> </span>starkwarelibs/pprof<span class="w"> </span>profile.pb.gz
+</pre></div>
+</div>
+<p>Or build the docker image manually using this docker file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>FROM<span class="w"> </span>golang
+RUN<span class="w"> </span>apt<span class="w"> </span>update
+RUN<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>graphviz
+WORKDIR<span class="w"> </span>/tmp
+ENTRYPOINT<span class="w"> </span><span class="o">[</span><span class="s2">&quot;go&quot;</span>,<span class="w"> </span><span class="s2">&quot;tool&quot;</span>,<span class="w"> </span><span class="s2">&quot;pprof&quot;</span>,<span class="w"> </span><span class="s2">&quot;--http&quot;</span>,<span class="w"> </span><span class="s2">&quot;localhost:8080&quot;</span>,<span class="w"> </span><span class="s2">&quot;--no_browser&quot;</span><span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="cairo_intro.html" title="previous chapter">Introduction to Cairo</a></li>
+      <li>Next: <a href="program_counter.html" title="next chapter">The program counter (pc)</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/debugging_tricks.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Hints &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Program input &amp; output" href="program_input_and_output.html" />
+    <link rel="prev" title="Imports" href="imports.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="hints">
+<span id="id1"></span><h1>Hints<a class="headerlink" href="#hints" title="Link to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>Cairo supports nondeterministic instructions.
+For example, to compute the root of 25 one may simply write:</p>
+<p>While this is fine for the verifier, the prover cannot handle such an expression implicitly
+(for example, the value can be both 5 or -5) and we have to instruct it what to do in order
+to compute the root. This is done by adding what we call ‘hints’.
+A hint is a block of Python code, that will be executed by the prover right before the next
+instruction.</p>
+<p>The format is as follows:</p>
+<p>To access <code class="docutils literal notranslate"><span class="pre">[ap]</span></code> in the hint we use the syntax <code class="docutils literal notranslate"><span class="pre">memory[ap]</span></code>
+(note that while <code class="docutils literal notranslate"><span class="pre">[ap]</span></code> is a valid Cairo expression,
+it is not a valid expression in Python).
+In addition, if we want to access a Cairo constant, <code class="docutils literal notranslate"><span class="pre">x</span></code>, in a hint, we use the expression
+<code class="docutils literal notranslate"><span class="pre">ids.x</span></code>. Function arguments and references, can be accessed in the same way.</p>
+<p>Note that a hint is attached to the next instruction and executed before each execution
+of the corresponding instruction. The hint is not an instruction on its own. Thus,</p>
+<p>will print <code class="docutils literal notranslate"><span class="pre">Hello</span> <span class="pre">world</span></code> infinitely many times
+(rather than printing once and then starting an infinite loop).</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>Make the code in the example above (of computing the square root) compile,
+and then run it. Then change the hint to:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>memory[ap] = int(math.sqrt(memory[ap - 1])) + 1
+</pre></div>
+</div>
+<p>You should get an <code class="docutils literal notranslate"><span class="pre">An</span> <span class="pre">ASSERT_EQ</span> <span class="pre">instruction</span> <span class="pre">failed</span></code> error.
+Make sure you understand it.</p>
+</section>
+<section id="id2">
+<h3>Exercise<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p>What is the difference between the following code segments?</p>
+<p>and</p>
+<p>Split your answer into two parts: the difference from the prover’s point of view
+and the difference from the verifier’s point of view.</p>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="imports.html" title="previous chapter">Imports</a></li>
+      <li>Next: <a href="program_input_and_output.html" title="next chapter">Program input &amp; output</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/hints.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
