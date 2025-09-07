@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Functions &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Types" href="types.html" />
+    <link rel="prev" title="Consts and references" href="consts.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="functions">
+<span id="id1"></span><h1>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>A function is a reusable unit of code that receives arguments and returns a value.
+To facilitate this in Cairo, we introduce two low-level instructions: <code class="docutils literal notranslate"><span class="pre">call</span> <span class="pre">addr</span></code>, and <code class="docutils literal notranslate"><span class="pre">ret</span></code>.
+In addition, the Cairo compiler supports high-level syntax for those instructions: <code class="docutils literal notranslate"><span class="pre">foo(...)</span></code>
+and <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">(...)</span></code> respectively.</p>
+<p>A function is declared as follows:</p>
+<p>The lines <code class="docutils literal notranslate"><span class="pre">func</span> <span class="pre">function_name()</span> <span class="pre">{</span></code> and <code class="docutils literal notranslate"><span class="pre">}</span></code> are not translated to Cairo instructions –
+they are just used by the compiler to name the function and create a corresponding scope.</p>
+<p>To call the function, simply use the call instruction:</p>
+<p>or the high-level syntax:</p>
+<p>The full syntax of <code class="docutils literal notranslate"><span class="pre">call</span></code> is similar to <code class="docutils literal notranslate"><span class="pre">jmp</span></code>:
+you can call a label (a function is also considered a label),
+and make a relative or absolute call (<code class="docutils literal notranslate"><span class="pre">call</span> <span class="pre">rel/abs</span> <span class="pre">...</span></code>).</p>
+</section>
+<section id="the-fp-register">
+<span id="fp-register"></span><h2>The fp register<a class="headerlink" href="#the-fp-register" title="Link to this heading">¶</a></h2>
+<p>When a function starts the frame pointer register (<code class="docutils literal notranslate"><span class="pre">fp</span></code>) is initialized to the current value
+of <code class="docutils literal notranslate"><span class="pre">ap</span></code>. During the entire scope of the function (excluding inner function calls)
+the value of <code class="docutils literal notranslate"><span class="pre">fp</span></code> remains constant.
+In particular, when a function, <code class="docutils literal notranslate"><span class="pre">foo</span></code>, calls an inner function, <code class="docutils literal notranslate"><span class="pre">bar</span></code>, the value of <code class="docutils literal notranslate"><span class="pre">fp</span></code>
+changes when <code class="docutils literal notranslate"><span class="pre">bar</span></code> starts but is restored when <code class="docutils literal notranslate"><span class="pre">bar</span></code> ends.</p>
+<p>The idea is that <code class="docutils literal notranslate"><span class="pre">ap</span></code> may change in an unknown way when an inner function is called,
+so it cannot reliably be used to access the original function’s local variables and arguments
+anymore after that. Thus, <code class="docutils literal notranslate"><span class="pre">fp</span></code> serves as an anchor to access these values.</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>Compile and run (with at least 10 steps) the following code.
+Use the <code class="docutils literal notranslate"><span class="pre">--print_memory</span></code> and <code class="docutils literal notranslate"><span class="pre">--relocate_prints</span></code> flags for <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code>.</p>
+<p>We will analyze the memory generated by this program in the example below.
+For now, try to think what happens when the cpu gets to the <code class="docutils literal notranslate"><span class="pre">ret</span></code> instruction
+(which of the registers <code class="docutils literal notranslate"><span class="pre">ap</span></code>, <code class="docutils literal notranslate"><span class="pre">fp</span></code>, <code class="docutils literal notranslate"><span class="pre">pc</span></code> should change when <code class="docutils literal notranslate"><span class="pre">ret</span></code> is executed
+and to what values?).</p>
+</section>
+</section>
+<section id="under-the-hood">
+<h2>Under the hood<a class="headerlink" href="#under-the-hood" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">call</span> <span class="pre">addr</span></code> is roughly equivalent to the following set of instructions:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>// Stores the value of the current fp, which will be
+// restored once the called function ends using ret.
+[ap] &lt;-- fp
+
+// Stores the address of the next instruction, to run
+// once the called function ends. This will be
+// assigned to pc when ret is invoked.
+[ap + 1] &lt;-- return_pc
+
+// Increase ap by 2, to account for the last two writes.
+ap += 2;
+
+// Updates fp to be the new ap, so it points to the start
+// of the new frame within the called function&#39;s scope.
+fp &lt;-- ap
+
+jmp addr;
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ret</span></code> is roughly equivalent to the following set of instructions:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>// Jumps to return_pc (stored on the stack).
+jmp [fp - 1];
+
+// Restores the value of the previous fp.
+fp &lt;-- [fp - 2]
+</pre></div>
+</div>
+<p>We can summarize it thusly:</p>
+<p><code class="docutils literal notranslate"><span class="pre">call</span></code> “pushes” the current frame pointer and return-address to a (virtual) stack of pairs
+(<code class="docutils literal notranslate"><span class="pre">fp</span></code>, <code class="docutils literal notranslate"><span class="pre">return_pc</span></code>) and jumps to the given address.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ret</span></code> “pops” the previous <code class="docutils literal notranslate"><span class="pre">fp</span></code> and jumps to <code class="docutils literal notranslate"><span class="pre">return_pc</span></code> that were pushed during the call.</p>
+<p>Schematically, after a call instruction the memory looks as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>|      ...     |
++--------------+
+| old_fp       |
++--------------+
+| return_pc    |
++--------------+
+|              | &lt;-- ap, fp
++--------------+
+|      ...     |
+</pre></div>
+</div>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h3>
+<p>Look at the memory values after running the program above:</p>
+<p>When main starts, the value of <code class="docutils literal notranslate"><span class="pre">fp</span></code> is 13, and the program calls the first invocation of <code class="docutils literal notranslate"><span class="pre">foo</span></code>,
+writing the current value of <code class="docutils literal notranslate"><span class="pre">fp</span></code> (13) and value of the program counter to return to (3).
+<code class="docutils literal notranslate"><span class="pre">foo</span></code> writes 1000 to the memory.
+The instruction <code class="docutils literal notranslate"><span class="pre">ret</span></code> restores the value of <code class="docutils literal notranslate"><span class="pre">fp</span></code> back to 13 and then jumps to <code class="docutils literal notranslate"><span class="pre">pc</span> <span class="pre">=</span> <span class="pre">3</span></code>.
+Then <code class="docutils literal notranslate"><span class="pre">foo</span></code> is called a second time.
+Make sure you understand the rest of the memory values.</p>
+</section>
+<section id="bonus-exercise">
+<h3>Bonus Exercise<a class="headerlink" href="#bonus-exercise" title="Link to this heading">¶</a></h3>
+<p>Use the information given in the last section, in order to write a piece of code that
+when executed puts the current values of <code class="docutils literal notranslate"><span class="pre">ap</span></code>, <code class="docutils literal notranslate"><span class="pre">fp</span></code> and <code class="docutils literal notranslate"><span class="pre">pc</span></code> in memory
+(say, write <code class="docutils literal notranslate"><span class="pre">ap</span></code> into <code class="docutils literal notranslate"><span class="pre">[ap]</span></code>, <code class="docutils literal notranslate"><span class="pre">fp</span></code> into <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">1]</span></code> and <code class="docutils literal notranslate"><span class="pre">pc</span></code> into <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">+</span> <span class="pre">2]</span></code>).</p>
+</section>
+</section>
+<section id="accessing-the-values-of-the-registers">
+<span id="retrieving-registers"></span><h2>Accessing the values of the registers<a class="headerlink" href="#accessing-the-values-of-the-registers" title="Link to this heading">¶</a></h2>
+<p>Cairo’s standard library has two functions that allow to retrieve the values of the three registers
+(in fact, they are implemented similarly to the solution of the last exercise).
+You may use them as follows:</p>
+<p>(You will learn more about this syntax in the sections below.)</p>
+<p>When Cairo needs to use the <em>address</em> fp in a <a class="reference internal" href="consts.html#compound-expressions"><span class="std std-ref">compound expression</span></a>
+it will try to replace it with a variable named <code class="docutils literal notranslate"><span class="pre">__fp__</span></code>, which is assumed to contain the value
+of <code class="docutils literal notranslate"><span class="pre">fp</span></code>.  Note that <em>dereferences</em> with respect to <code class="docutils literal notranslate"><span class="pre">fp</span></code> (such as <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">+</span> <span class="pre">3]</span></code>) are always OK.
+For example, line B in the following code requires line A in order to compile,
+while line C does not.</p>
+</section>
+<section id="function-arguments-and-return-values">
+<h2>Function arguments and return values<a class="headerlink" href="#function-arguments-and-return-values" title="Link to this heading">¶</a></h2>
+<p>The following is an example of a function which gets two values <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>
+and returns their sum <code class="docutils literal notranslate"><span class="pre">z</span></code> and product <code class="docutils literal notranslate"><span class="pre">w</span></code>:</p>
+<section id="arguments">
+<h3>Arguments<a class="headerlink" href="#arguments" title="Link to this heading">¶</a></h3>
+<p>Arguments are written to the “stack” before the <code class="docutils literal notranslate"><span class="pre">call</span></code> instruction.
+For example, to call <code class="docutils literal notranslate"><span class="pre">foo(4,</span> <span class="pre">5)</span></code> you should write:</p>
+<p>The instruction <code class="docutils literal notranslate"><span class="pre">call</span></code> <em>pushes two more values to the stack</em> (next pc and current fp).
+Thus, when a function starts, the arguments are available at <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">-</span> <span class="pre">3]</span></code>, <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">-</span> <span class="pre">4]</span></code>, …
+(in reverse order).
+For each argument, the Cairo compiler creates a reference <code class="docutils literal notranslate"><span class="pre">argname</span></code> to its value
+and a constant <code class="docutils literal notranslate"><span class="pre">Args.argname</span></code> with its offset (0, 1, 2, …).
+Any usage of the reference <code class="docutils literal notranslate"><span class="pre">argname</span></code> is replaced by <code class="docutils literal notranslate"><span class="pre">[fp</span> <span class="pre">-</span> <span class="pre">(2</span> <span class="pre">+</span> <span class="pre">n_args)</span> <span class="pre">+</span> <span class="pre">Args.argname]</span></code>.
+This way you can access the value of an argument named <code class="docutils literal notranslate"><span class="pre">x</span></code> simply by writing <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>Cairo supports the following syntactic sugar to call a function, which also supports
+<a class="reference internal" href="consts.html#compound-expressions"><span class="std std-ref">compound expressions</span></a>:</p>
+</section>
+<section id="return-values">
+<h3>Return values<a class="headerlink" href="#return-values" title="Link to this heading">¶</a></h3>
+<p>The function writes to the stack its return values just before the <code class="docutils literal notranslate"><span class="pre">ret</span></code> instruction.
+Thus, after the function call the return values will be available to the caller at
+<code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span></code>, <code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">2]</span></code> and so on.</p>
+<p>For example, to use the values returned by <code class="docutils literal notranslate"><span class="pre">foo</span></code> you may write:</p>
+<p>The Cairo compiler automatically creates a type definition named <code class="docutils literal notranslate"><span class="pre">foo.Return</span></code>
+with the return type: <code class="docutils literal notranslate"><span class="pre">(z:</span> <span class="pre">felt,</span> <span class="pre">w:</span> <span class="pre">felt)</span></code>.
+In fact, one may define a <a class="reference internal" href="consts.html#typed-references"><span class="std std-ref">typed reference</span></a>
+as follows: <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">foo_ret</span> <span class="pre">=</span> <span class="pre">[cast(ap</span> <span class="pre">-</span> <span class="pre">2,</span> <span class="pre">foo.Return*)];</span></code>.
+Now, you can access <code class="docutils literal notranslate"><span class="pre">z</span></code> as <code class="docutils literal notranslate"><span class="pre">foo_ret.z</span></code>.</p>
+<p>Cairo supports a syntactic sugar for these cases (which we call “return value references”):</p>
+</section>
+<section id="return-values-unpacking">
+<span id="id2"></span><h3>Return values unpacking<a class="headerlink" href="#return-values-unpacking" title="Link to this heading">¶</a></h3>
+<p>Cairo supports syntactic sugar to assign multiple return values to references via tuples. The
+syntax <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">(z,</span> <span class="pre">w)</span> <span class="pre">=</span> <span class="pre">foo(x=4,</span> <span class="pre">x=5);</span></code> assigns <code class="docutils literal notranslate"><span class="pre">foo</span></code>’s return values to <code class="docutils literal notranslate"><span class="pre">z</span></code> and <code class="docutils literal notranslate"><span class="pre">w</span></code>,
+respectively:</p>
+<p>In many cases, you may want to copy the result to a local variable, in order to prevent it from
+being revoked later. While you can add an instruction <code class="docutils literal notranslate"><span class="pre">local</span> <span class="pre">z</span> <span class="pre">=</span> <span class="pre">z;</span></code>, which rebinds the reference
+to a new local variable with the same name, the same effect can be achieved using:</p>
+</section>
+</section>
+<section id="named-arguments">
+<h2>Named arguments<a class="headerlink" href="#named-arguments" title="Link to this heading">¶</a></h2>
+<p>In many cases it is helpful to let the compiler warn about inconsistencies between the lists of
+arguments in the function definition and in the function call.
+For example, if a function argument is added, you may want to get an error if that argument
+was not passed when the function was called.
+To allow the compiler to produce that alert, use the following pattern when calling a function:</p>
+<p>Note that this way you may pass the arguments in any order (for example, pass <code class="docutils literal notranslate"><span class="pre">y</span></code> before <code class="docutils literal notranslate"><span class="pre">x</span></code>).</p>
+<section id="id3">
+<h3>Exercise<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Modify the function <code class="docutils literal notranslate"><span class="pre">foo</span></code> by renaming the argument <code class="docutils literal notranslate"><span class="pre">x</span></code> to <code class="docutils literal notranslate"><span class="pre">new_x</span></code> (don’t fix the
+calling code). Make sure you understand the error.</p></li>
+<li><p>Do the same for adding/removing an argument from <code class="docutils literal notranslate"><span class="pre">foo</span></code>.</p></li>
+</ol>
+</section>
+</section>
+<section id="tail-recursion">
+<h2>Tail recursion<a class="headerlink" href="#tail-recursion" title="Link to this heading">¶</a></h2>
+<p>Using the approach above allows one to do tail recursion efficiently.
+Tail recursion refers to the case when a function ends by calling a second
+function and immediately returning the output of this inner function without
+any modification.
+For example, a function that ends with <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">sin(2</span> <span class="pre">*</span> <span class="pre">x);</span></code> uses tail recursion
+but a function that ends with <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">2*sin(x);</span></code> does not.
+Use the following pattern in this case:</p>
+<p>The high-level syntax equivalent of a tail call is <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">inner_func(...)</span></code> (see
+<a class="reference internal" href="#return-tuple"><span class="std std-ref">Return tuple</span></a>):</p>
+<p>in both cases the return values of <code class="docutils literal notranslate"><span class="pre">inner_func</span></code> are propagated by the calling function.</p>
+<section id="id4">
+<h3>Exercise<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<p>Read the following Fibonacci program:</p>
+<p>Make sure you understand the memory layout, the use of the <code class="docutils literal notranslate"><span class="pre">ap</span></code> and <code class="docutils literal notranslate"><span class="pre">fp</span></code> registers and the idea
+of tail recursion return values.</p>
+</section>
+<section id="id5">
+<h3>Exercise<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Implement the function <span class="math notranslate nohighlight">\(f(x, n) = x^n\)</span> using the recursion rule
+<span class="math notranslate nohighlight">\(f(x,n+1)=f(x,n) \cdot x\)</span>.</p></li>
+<li><p>Add code that calls the function with <code class="docutils literal notranslate"><span class="pre">x=2</span></code>, <code class="docutils literal notranslate"><span class="pre">n=7</span></code>, run it
+(if you get the <code class="docutils literal notranslate"><span class="pre">End</span> <span class="pre">of</span> <span class="pre">program</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">reached</span></code> error, increase the number of steps)
+and verify the result (e.g., by using <code class="docutils literal notranslate"><span class="pre">--print_memory</span></code> or by adding a fake assert instruction
+<code class="docutils literal notranslate"><span class="pre">[ap</span> <span class="pre">-</span> <span class="pre">1]</span> <span class="pre">=</span> <span class="pre">1111</span></code> and making sure the error says something like
+<code class="docutils literal notranslate"><span class="pre">An</span> <span class="pre">ASSERT_EQ</span> <span class="pre">instruction</span> <span class="pre">failed:</span> <span class="pre">128</span> <span class="pre">!=</span> <span class="pre">1111</span></code>).</p></li>
+<li><p>What is the running time of your program (i.e. exact number of steps as a function of <code class="docutils literal notranslate"><span class="pre">n</span></code>)?
+Guess or calculate first, and then measure it by adding a fake wrong assert and running with
+<code class="docutils literal notranslate"><span class="pre">--debug_error</span> <span class="pre">--print_info</span></code></p></li>
+</ol>
+</section>
+</section>
+<section id="return-tuple">
+<span id="id6"></span><h2>Return tuple<a class="headerlink" href="#return-tuple" title="Link to this heading">¶</a></h2>
+<p>Cairo supports the following syntactic sugar which allows returning values from a function easily:</p>
+<p>This is equivalent to:</p>
+<p>Named arguments are checked against declared return type.
+Note that <a class="reference internal" href="consts.html#compound-expressions"><span class="std std-ref">compound expressions</span></a> are supported in the returned values.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="consts.html" title="previous chapter">Consts and references</a></li>
+      <li>Next: <a href="types.html" title="next chapter">Types</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/functions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

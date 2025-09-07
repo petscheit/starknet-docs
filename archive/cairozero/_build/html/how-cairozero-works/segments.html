@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Segments &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Nondeterministic jumps" href="non_deterministic_jumps.html" />
+    <link rel="prev" title="Program input &amp; output" href="program_input_and_output.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="segments">
+<span id="id1"></span><h1>Segments<a class="headerlink" href="#segments" title="Link to this heading">¶</a></h1>
+<section id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Link to this heading">¶</a></h2>
+<p>As you may recall, the memory of a Cairo program has to be <a class="reference internal" href="cairo_intro.html#continuous-memory"><span class="std std-ref">continuous</span></a>.
+However, some parts of the program may be individually continuous but vary in length in ways that
+are only computed at runtime – in fact, their size can only be known after the program
+terminates.</p>
+<p>For this purpose, during the run of the Cairo VM, it’s useful to treat the memory as a list of
+continuous <em>segments</em>, which are concatenated to form one continuous chunk at the end of the run,
+when their final sizes can be calculated.</p>
+</section>
+<section id="relocatable-values">
+<h2>Relocatable values<a class="headerlink" href="#relocatable-values" title="Link to this heading">¶</a></h2>
+<p>The absolute address of every memory cell within a segment can only be determined at the end of a
+VM run. Because these addresses can be stored in memory cells themselves, the VM needs a way to
+refer to them. This is achieved using <em>relocatable values</em>, represented as <code class="docutils literal notranslate"><span class="pre">&lt;segment&gt;:&lt;offset&gt;</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">&lt;segment&gt;</span></code> is the segment number, assigned arbitrarily at the start of the run, and
+<code class="docutils literal notranslate"><span class="pre">&lt;offset&gt;</span></code> is the offset of the memory cell within the segment.</p>
+<p>Note that because segment numbers are assigned arbitrarily, the number is not guaranteed to
+represent the same segment across different programs or even in different runs of the same
+program.</p>
+</section>
+<section id="uses">
+<h2>Uses<a class="headerlink" href="#uses" title="Link to this heading">¶</a></h2>
+<section id="the-program-and-execution-segments">
+<h3>The program and execution segments<a class="headerlink" href="#the-program-and-execution-segments" title="Link to this heading">¶</a></h3>
+<p>Cairo programs are themselves kept in memory, in what is called the <em>program segment</em>. This
+segment is of fixed length and contains the numeric representation of the Cairo program.
+The program counter <code class="docutils literal notranslate"><span class="pre">pc</span></code> starts at the beginning of the program segment.</p>
+<p>In addition to this, any Cairo program requires an <em>execution segment</em>. This is where the
+registers <code class="docutils literal notranslate"><span class="pre">ap</span></code> and <code class="docutils literal notranslate"><span class="pre">fp</span></code> start, and where data generated during the run of a Cairo program
+(variables, return addresses for function calls, etc.) is stored.</p>
+<p>The length of the execution segment is variable, as it depends, for example, on the
+program input.</p>
+</section>
+<section id="builtin-segments">
+<h3>Builtin segments<a class="headerlink" href="#builtin-segments" title="Link to this heading">¶</a></h3>
+<p>As you’ll see in the <a class="reference internal" href="builtins.html#builtins"><span class="std std-ref">Builtins and implicit arguments</span></a> section, every builtin receives its own continuous area in
+memory. This memory is located in its own segment, which is variable in length.</p>
+</section>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h2>
+<p>Compile the following code and run it with
+<code class="docutils literal notranslate"><span class="pre">--layout=small</span> <span class="pre">--print_memory</span> <span class="pre">--print_info</span> <span class="pre">--print_segments</span></code> (and without <code class="docutils literal notranslate"><span class="pre">--relocate_prints</span></code>):</p>
+<p>Segments appear in the output in a few places. First, the hint output:</p>
+<p>The hint prints the value of <code class="docutils literal notranslate"><span class="pre">ap</span></code> and then the value of the memory cell at <code class="docutils literal notranslate"><span class="pre">ap</span> <span class="pre">-</span> <span class="pre">1</span></code>, to which
+<code class="docutils literal notranslate"><span class="pre">output_ptr</span></code> was assigned in the line above. Observe that the value of the <code class="docutils literal notranslate"><span class="pre">ap</span></code> register is
+the relocatable value <code class="docutils literal notranslate"><span class="pre">1:4</span></code>. Usually, segment <code class="docutils literal notranslate"><span class="pre">1</span></code> is the execution segment (recall that <code class="docutils literal notranslate"><span class="pre">ap</span></code>
+starts in the execution segment). On the other hand, the value it points to, the output builtin
+pointer, is located in its own segment <code class="docutils literal notranslate"><span class="pre">2</span></code>.</p>
+<p>Segments appear again in the memory output:</p>
+<p>The memory is divided into three segments:</p>
+<ul class="simple">
+<li><p>Segment <code class="docutils literal notranslate"><span class="pre">0</span></code>: the program segment. This segment contains the compiled bytecode of the program.</p></li>
+<li><p>Segment <code class="docutils literal notranslate"><span class="pre">1</span></code>: the execution segment. This segment contains the values saved in memory during
+the run of the program. Observe that most of these represent pointers and are thus relocatable
+values themselves. The constant <code class="docutils literal notranslate"><span class="pre">12</span></code>, which appears twice, is the only exception.</p></li>
+<li><p>Segment <code class="docutils literal notranslate"><span class="pre">2</span></code>: the output builtin segment. This segment contains the only value written to
+the output, <code class="docutils literal notranslate"><span class="pre">12</span></code>.</p></li>
+</ul>
+<p>The final values of the registers are also relocatable. <code class="docutils literal notranslate"><span class="pre">ap</span></code> remains in the execution segment,
+while the return values of <code class="docutils literal notranslate"><span class="pre">fp</span></code> and <code class="docutils literal notranslate"><span class="pre">pc</span></code> are given their own segments for technical reasons.</p>
+<p>Finally, the segment relocation table describes the real addresses of the beginning of the segments
+after relocation:</p>
+<p>Segments <code class="docutils literal notranslate"><span class="pre">3-4</span></code> are the empty segments used for the return values of <code class="docutils literal notranslate"><span class="pre">fp</span></code> an <code class="docutils literal notranslate"><span class="pre">pc</span></code>.
+Observe that each segment’s beginning is mapped to the sum of the lengths of the previous
+segments. This keeps the entire memory continuous.</p>
+</section>
+<section id="exercise">
+<h2>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h2>
+<p>Run the same program again, this time with the flag <code class="docutils literal notranslate"><span class="pre">--relocate_prints</span></code>, which will print
+the same values after relocation.</p>
+<ul class="simple">
+<li><p>Convince yourself that the relocated memory and register values indeed correspond to the
+relocatable values, relocated according to the segment relocation table.</p></li>
+<li><p>Why are the values printed from the hint (the top two lines) still relocatable? Is it possible
+to print their relocated value from the same hint?</p></li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input_and_output.html">Program input &amp; output</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="program_input_and_output.html" title="previous chapter">Program input &amp; output</a></li>
+      <li>Next: <a href="non_deterministic_jumps.html" title="next chapter">Nondeterministic jumps</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/segments.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

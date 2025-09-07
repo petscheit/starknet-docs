@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Program input &amp; output &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Segments" href="segments.html" />
+    <link rel="prev" title="Hints" href="hints.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="program-input-output">
+<h1>Program input &amp; output<a class="headerlink" href="#program-input-output" title="Link to this heading">¶</a></h1>
+<p>A Cairo program may have a secret input (called “program input”)
+and a public output (called “program output”).</p>
+<p>Let’s say that you want to prove that you know the pre-image of a hash function
+(that is, <code class="docutils literal notranslate"><span class="pre">x</span></code> such that <code class="docutils literal notranslate"><span class="pre">hash(x)</span> <span class="pre">=</span> <span class="pre">y</span></code> for a given <code class="docutils literal notranslate"><span class="pre">y</span></code>).
+The input will be your secret (<code class="docutils literal notranslate"><span class="pre">x</span></code>) – the pre-image of the hash function.
+The program will then compute the hash of this input, and output the result.
+Since Cairo’s program-output is public, everyone who gets the proof will be convinced that the
+prover indeed knows a pre-image for the expected hash value.</p>
+<p>Sometimes, a value from the program input will be copied to the program output –
+consider, for example, the statement “I know that the <code class="docutils literal notranslate"><span class="pre">n</span></code>-th Fibonacci number is <code class="docutils literal notranslate"><span class="pre">Y</span></code>”.
+The program input in this case will be <code class="docutils literal notranslate"><span class="pre">n</span></code>, and the output will be both <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">Y</span></code> –
+because the verifier has to see what is <code class="docutils literal notranslate"><span class="pre">n</span></code>.
+Removing <code class="docutils literal notranslate"><span class="pre">n</span></code> from the output will result in a proof of the statement
+“I know that some fibonacci number is <code class="docutils literal notranslate"><span class="pre">Y</span></code>”.</p>
+<section id="program-input">
+<span id="program-inputs"></span><h2>Program input<a class="headerlink" href="#program-input" title="Link to this heading">¶</a></h2>
+<p>Adding program input to a Cairo program is easy –
+you create a json file with your program input, and pass it to <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> using the
+<code class="docutils literal notranslate"><span class="pre">--program_input</span></code> flag.
+Then you can use hints to access the content of this file using the variable <code class="docutils literal notranslate"><span class="pre">program_input</span></code>
+(recall that hints are only visible to the prover).</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>Create an input file <code class="docutils literal notranslate"><span class="pre">input.json</span></code> with the following content:</p>
+<p>Now compile and run the following program (run with <code class="docutils literal notranslate"><span class="pre">--program_input=input.json</span></code>):</p>
+</section>
+</section>
+<section id="id2">
+<h2>Program output<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<p>Adding an output to a Cairo program is slightly more complicated.
+Start by adding the following directive to the top of your file
+(see more on the <code class="docutils literal notranslate"><span class="pre">%builtins</span></code> directive <a class="reference internal" href="builtins.html#builtins"><span class="std std-ref">here</span></a>):</p>
+<p>You’ll need to run your program with a different layout to be able to use the output builtin.
+Add <code class="docutils literal notranslate"><span class="pre">--layout=small</span></code> to <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> (see more on layouts <a class="reference internal" href="builtins.html#layouts"><span class="std std-ref">here</span></a>).
+Using the <code class="docutils literal notranslate"><span class="pre">small</span></code> layout requires the number of steps to be divisible by 512,
+so you will have to run with <code class="docutils literal notranslate"><span class="pre">--steps=512</span></code> (which should suffice for small programs).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">%builtins</span> <span class="pre">output</span></code> directive makes the function <code class="docutils literal notranslate"><span class="pre">main()</span></code> get one argument and return one
+value. The argument is conventionally called <code class="docutils literal notranslate"><span class="pre">output_ptr</span></code> and the program should use it as a
+pointer to a block of memory to which it may write its outputs.
+<code class="docutils literal notranslate"><span class="pre">main()</span></code> should return the value of the pointer after writing, signifying where the chunk of
+output memory ends.</p>
+<p>The following program writes three constant values to the output.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">output_ptr</span></code> is the value of the output pointer,
+while <code class="docutils literal notranslate"><span class="pre">[output_ptr]</span></code> is the value it points to.
+Also note that <code class="docutils literal notranslate"><span class="pre">[output_ptr]</span> <span class="pre">=</span> <span class="pre">100</span></code> is not a valid Cairo instruction,
+so we split it into two instructions (for the list of instructions see <a class="reference internal" href="cairo_intro.html#basic-instructions"><span class="std std-ref">Basic instructions</span></a>).</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../hello-cairozero/index.html">Hello, Cairo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How Cairo Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cairo_intro.html">Introduction to Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_tricks.html">Debugging-related flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_counter.html">The program counter (pc)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="consts.html">Consts and references</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="object_allocation.html">Object allocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scope_attributes.html">Scope attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="imports.html">Imports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hints.html">Hints</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Program input &amp; output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="segments.html">Segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="non_deterministic_jumps.html">Nondeterministic jumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="builtins.html">Builtins and implicit arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="define_word.html">Define word</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">How Cairo Works</a><ul>
+      <li>Previous: <a href="hints.html" title="previous chapter">Hints</a></li>
+      <li>Next: <a href="segments.html" title="next chapter">Segments</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/how-cairozero-works/program_input_and_output.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

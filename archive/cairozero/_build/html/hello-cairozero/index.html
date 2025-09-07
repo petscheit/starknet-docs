@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Hello, Cairo &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Programming in Cairo" href="intro.html" />
+    <link rel="prev" title="Setting up the environment" href="../quickstart.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="hello-cairo">
+<span id="id1"></span><h1>Hello, Cairo<a class="headerlink" href="#hello-cairo" title="Link to this heading">¶</a></h1>
+<p>“Hello, Cairo” describes Cairo for the programmer who wishes to understand what Cairo can do
+hands-on, and start writing programs in Cairo.
+If you’d like a deeper dive into the building blocks of Cairo, visit
+<a class="reference internal" href="../how-cairozero-works/index.html#how-cairo-works"><span class="std std-ref">How Cairo Works</span></a>.</p>
+<p><strong>Get started with writing Cairo programs</strong></p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Programming in Cairo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#your-first-function">Your first function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-assert-statement">The assert statement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#writing-a-main-function">Writing a main() function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-primitive-type-field-element-felt">The primitive type - field element (felt)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#using-array-sum">Using array_sum()</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="puzzle.html">The 15-puzzle</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html#what-we-need-to-check">What we need to check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html#the-location-struct">The Location struct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html#verifying-the-validity-of-a-single-location">Verifying the validity of a single location</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html#verifying-two-consecutive-locations">Verifying two consecutive locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html#verifying-the-list-of-locations">Verifying the list of locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html#adding-a-dummy-main-function">Adding a dummy main function</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dict.html#dictionaries-maps-in-cairo">Dictionaries/maps in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html#preparing-the-list-of-dictaccess-entries">Preparing the list of DictAccess entries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html#final-state">Final state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html#initial-state">Initial state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html#putting-it-all-together">Putting it all together</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="program_input.html">Program input and hints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html#hints">Hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html#program-input">Program input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html#running-the-program">Running the program</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html#taking-advantage-of-nondeterminism">Taking advantage of nondeterminism</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="voting.html">Voting system</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#generating-dummy-data">Generating dummy data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#processing-the-program-input">Processing the program input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#verifying-that-the-votes-are-signed">Verifying that the votes are signed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#merkle-tree">Merkle tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#processing-the-votes">Processing the votes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#the-main-function">The main() function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html#another-batch">Another batch</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#accounts">Accounts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#modifying-an-account">Modifying an account</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#swapping-tokens">Swapping Tokens</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#the-transaction-loop">The transaction loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#computing-the-merkle-roots">Computing the Merkle roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#preparing-the-program-input">Preparing the program input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html#the-main-function">The main() function</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Hello, Cairo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Programming in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html">The 15-puzzle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html">Program input and hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html">Voting system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../quickstart.html" title="previous chapter">Setting up the environment</a></li>
+      <li>Next: <a href="intro.html" title="next chapter">Programming in Cairo</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

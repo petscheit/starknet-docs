@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The 15-puzzle - cont. &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Program input and hints" href="program_input.html" />
+    <link rel="prev" title="The 15-puzzle" href="puzzle.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="the-15-puzzle-cont">
+<h1>The 15-puzzle - cont.<a class="headerlink" href="#the-15-puzzle-cont" title="Link to this heading">¶</a></h1>
+<section id="dictionaries-maps-in-cairo">
+<span id="dicts-in-cairo"></span><h2>Dictionaries/maps in Cairo<a class="headerlink" href="#dictionaries-maps-in-cairo" title="Link to this heading">¶</a></h2>
+<p>The next thing we should check is that the numbers of the second list
+(the values of the tiles being moved) are consistent with the first list.
+To do this, we need to store and update the location of each tile.
+This requires some kind of read-write memory, where we can track the location of
+each tile and update it when tiles are moved.
+But as Cairo’s memory is immutable, we can’t use it for that purpose.</p>
+<p>Luckily, there is a library function called <code class="docutils literal notranslate"><span class="pre">squash_dict</span></code> which can assist us here.
+It allows to simulate the behavior of a read-write dict/map in Cairo.</p>
+<p>The standard-library file <code class="docutils literal notranslate"><span class="pre">dict_access.cairo</span></code> defines the following struct:</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code>, which is defined in <code class="docutils literal notranslate"><span class="pre">squash_dict.cairo</span></code>, gets a list of
+<code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> and treats them as “read-modify-write” instructions on a dict.
+It verifies that they make sense – if we change the value at <code class="docutils literal notranslate"><span class="pre">key=3</span></code> to <code class="docutils literal notranslate"><span class="pre">10</span></code>,
+the next entry which refers to <code class="docutils literal notranslate"><span class="pre">key=3</span></code> must have <code class="docutils literal notranslate"><span class="pre">prev_value=10</span></code>.
+Finally, it returns the <strong>squashed dict</strong> – which is a list of <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code>
+entries where
+(1) the squashed keys are sorted,
+(2) each key appears once and
+(3) the squashed <code class="docutils literal notranslate"><span class="pre">prev_value</span></code> refers to the <code class="docutils literal notranslate"><span class="pre">prev_value</span></code> in the <strong>first</strong> time
+the key appeared and
+similarly <code class="docutils literal notranslate"><span class="pre">new_value</span></code> refers to <code class="docutils literal notranslate"><span class="pre">new_value</span></code> in the <strong>last</strong> time it
+appeared.</p>
+<p>Let’s take a look at an example. Suppose that we have the following list of
+DictAccess entries:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Prev</p></th>
+<th class="head"><p>New</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>3</p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>4</p></td>
+<td><p>4</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>2</p></td>
+<td><p>10</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>2</p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>10</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>3</p></td>
+<td><p>4</p></td>
+</tr>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>4</p></td>
+<td><p>5</p></td>
+</tr>
+</tbody>
+</table>
+<p>Note that when 7 appears the second time (the third entry), the previous value 2 matches the
+new value in the first row, and the new value 10 matches the previous value in the next appearance
+of 7 in the fifth row. If this was not the case, <code class="docutils literal notranslate"><span class="pre">squash_dict</span></code> would fail.</p>
+<p>The squashed dict in this case will be:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Prev</p></th>
+<th class="head"><p>New</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>2</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>4</p></td>
+<td><p>4</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>3</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>You can see that it summarizes what happened to each key (e.g., key 7 started from 3, changed to 2,
+then to 10 and then to 0. Therefore in the squashed dict we see the values 3 and 0).</p>
+</section>
+<section id="preparing-the-list-of-dictaccess-entries">
+<h2>Preparing the list of DictAccess entries<a class="headerlink" href="#preparing-the-list-of-dictaccess-entries" title="Link to this heading">¶</a></h2>
+<p>Our keys will be the values on the tiles (the numbers between 1 and 15),
+and our values will be the locations.
+There is one problem: each location consists of two field elements
+and each value in <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> is one field element.
+There are two possible solutions:
+(1) use a pointer to the location object,
+(2) convert the two coordinates to one number using the formula <code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">*</span> <span class="pre">row</span> <span class="pre">+</span> <span class="pre">col</span></code>.
+Here we chose to go with option (2).</p>
+<p>The function gets a pointer to the list of locations, a pointer to the list of tiles
+(unlike the list of locations, this is a list of simple field elements, not structs),
+the number of steps in the solution and a pointer called <code class="docutils literal notranslate"><span class="pre">dict</span></code>.
+The function writes its new dict entries starting from <code class="docutils literal notranslate"><span class="pre">dict</span></code>, and returns the “updated”
+<code class="docutils literal notranslate"><span class="pre">dict</span></code> pointer – the pointer to the next address to write if you want to add more entries
+to the list. This way we can concatenate functions writing <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> lists.
+This pattern, of getting a pointer, reading/writing entries from that pointer and returning
+an updated pointer is very common in Cairo.</p>
+<p>The line <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">next_loc:</span> <span class="pre">Location*</span> <span class="pre">=</span> <span class="pre">...</span></code> defines a <a class="reference internal" href="../how-cairozero-works/consts.html#references"><span class="std std-ref">reference</span></a> –
+unlike tempvar/local, this does not allocate a memory cell. Instead, every time we
+refer to <code class="docutils literal notranslate"><span class="pre">next_loc</span></code> it will be replaced by <code class="docutils literal notranslate"><span class="pre">loc_list</span> <span class="pre">+</span> <span class="pre">Location.SIZE</span></code>.
+Thus, the scope of the reference is simply the scope of its expression.</p>
+<p>The line <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">build_dict(...)</span></code> is a tail recursion call: a recursion which ends with returning
+the values of the recursive call.</p>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>How would you write the function without the <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">build_dict(...)</span></code> syntax?</p>
+<p>Note that you can use the Cairo tracer to debug your code if needed.
+In addition, you may refer to <a class="reference internal" href="../how-cairozero-works/debugging_tricks.html#debugging-tricks"><span class="std std-ref">Debugging-related flags</span></a>.</p>
+</section>
+</section>
+<section id="final-state">
+<h2>Final state<a class="headerlink" href="#final-state" title="Link to this heading">¶</a></h2>
+<p>To make sure that the solution ends in the “solved” configuration,
+we will append 15 entries to the list of <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> entries created
+by <code class="docutils literal notranslate"><span class="pre">build_dict()</span></code>. The first entry will be
+<code class="docutils literal notranslate"><span class="pre">(key=1,</span> <span class="pre">prev_value=0,</span> <span class="pre">new_value=0)</span></code>. We mentioned above that a DictAccess represents
+a read-modify-write operation.
+As <code class="docutils literal notranslate"><span class="pre">new_value=prev_value</span></code>, this entry is a simple read operation, used to guarantee
+that at the end of <code class="docutils literal notranslate"><span class="pre">build_dict()</span></code>, tile 1 is located at 0 (which is the top-left square).
+Similarly, we will add
+<code class="docutils literal notranslate"><span class="pre">(key=2,</span> <span class="pre">prev_value=1,</span> <span class="pre">new_value=1),</span> <span class="pre">...,</span> <span class="pre">(key=15,</span> <span class="pre">prev_value=14,</span> <span class="pre">new_value=14)</span></code>.
+It is slightly more efficient to write the loop backwards:</p>
+<p>Note that we keep using the pattern where the <code class="docutils literal notranslate"><span class="pre">dict</span></code> argument refers to the place
+the function should start writing (it’ll be the end of <code class="docutils literal notranslate"><span class="pre">build_dict()</span></code>), and
+the function returns the pointer to the end of the new written entries.</p>
+</section>
+<section id="initial-state">
+<h2>Initial state<a class="headerlink" href="#initial-state" title="Link to this heading">¶</a></h2>
+<p>We will handle the initial state differently – we will simply go over the squashed dict
+(applied on the results of both <code class="docutils literal notranslate"><span class="pre">build_dict()</span></code> and <code class="docutils literal notranslate"><span class="pre">finalize_state()</span></code>) and
+“print” to the program output the initial state.
+This way, the verifier of the proof
+will know the initial configuration which we solved.</p>
+<p>Note that we need the implicit argument <code class="docutils literal notranslate"><span class="pre">output_ptr</span></code> in order to call <code class="docutils literal notranslate"><span class="pre">serialize_word()</span></code>.</p>
+</section>
+<section id="putting-it-all-together">
+<h2>Putting it all together<a class="headerlink" href="#putting-it-all-together" title="Link to this heading">¶</a></h2>
+<p>We have mentioned before that in order to perform comparison between two values
+you need to use a Cairo builtin named “range-check”.
+We haven’t used it ourselves, but the function <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code> requires it.
+Due to the way builtins are implemented in the Cairo machine,
+functions that need to use a builtin (and all the functions calling them)
+require that a pointer to the builtin will be passed as an argument,
+and that the updated pointer will be returned
+(the same way we treat the dict pointers).
+This happens automatically when we add the implicit argument <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>.
+Thus, <code class="docutils literal notranslate"><span class="pre">check_solution()</span></code> gets an implicit argument called <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code> and
+the Cairo compiler passes it to <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code>.
+<code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code> returns an updated pointer
+and <code class="docutils literal notranslate"><span class="pre">check_solution()</span></code> returns the same value to its caller.
+You can learn more about the range-check builtins and on builtins in general
+<a class="reference internal" href="../how-cairozero-works/builtins.html#builtins"><span class="std std-ref">here</span></a>.</p>
+<p>This is a good time to mention the reference rebinding mechanism.
+Up to the call to <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code>, <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code> referred to the argument of the function.
+Since <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code> has an implicit argument named <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>,
+this function call <strong>rebinds</strong> the definition of the term <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code>
+to the returned value from <code class="docutils literal notranslate"><span class="pre">squash_dict</span></code>.
+This allows chaining calls to functions without giving new names to the
+variables
+(in fact, we have also used reference rebinding for <code class="docutils literal notranslate"><span class="pre">dict_end</span></code>).
+You should note that while it looks like a variable name <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code> is changing
+its value, this is not the case – Cairo is immutable.
+Rather than the value changing, the meaning of <code class="docutils literal notranslate"><span class="pre">range_check_ptr</span></code> throughout the function changes.
+You can learn more about reference rebinding <a class="reference internal" href="../how-cairozero-works/consts.html#reference-rebinding"><span class="std std-ref">here</span></a>.</p>
+<p>Let’s modify our previous dummy main to see the results of what we did so far
+(note that you’ll need to put the <code class="docutils literal notranslate"><span class="pre">%builtin</span></code> directive at the top of the file,
+and use <code class="docutils literal notranslate"><span class="pre">--layout=small</span></code> to <code class="docutils literal notranslate"><span class="pre">cairo-run</span></code> due to the usage of builtins):</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Hello, Cairo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Programming in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html">The 15-puzzle</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html">Program input and hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html">Voting system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Hello, Cairo</a><ul>
+      <li>Previous: <a href="puzzle.html" title="previous chapter">The 15-puzzle</a></li>
+      <li>Next: <a href="program_input.html" title="next chapter">Program input and hints</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/dict.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
