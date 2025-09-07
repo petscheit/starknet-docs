@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Voting system &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="A simple Automated Market Maker (AMM)" href="amm.html" />
+    <link rel="prev" title="Program input and hints" href="program_input.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="voting-system">
+<span id="voting"></span><h1>Voting system<a class="headerlink" href="#voting-system" title="Link to this heading">¶</a></h1>
+<p>In this section we will write Cairo code for a small voting system.
+This voting system can be used, for example, to run a secure (non-private) voting with a lot of
+voters on a blockchain.
+We will assume that each voter has a pair of private and public keys
+(for the <a class="reference external" href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">ECDSA signature scheme</a>)
+and that the list of voters’ public keys is fixed.
+Each voter may vote “Yes” (1) or “No” (0).
+The system will <strong>not</strong> guarantee anonymity.</p>
+<p>This section assumes some basic knowledge of cryptographic primitives such as hash functions,
+digital signatures and Merkle trees.
+In addition, if you haven’t already read the previous parts of the “Hello, Cairo” tutorial, you
+are encouraged to do so before reading this part.</p>
+<section id="generating-dummy-data">
+<h2>Generating dummy data<a class="headerlink" href="#generating-dummy-data" title="Link to this heading">¶</a></h2>
+<p>First, let’s generate some dummy data for the voting.
+To generate the key pairs and signature we will write a small Python script using
+StarkWare’s crypto library:</p>
+<p>We use the Pedersen hash function and the ECDSA signature, which are natively supported in Cairo.
+For technical details about those cryptographic primitives see
+<a class="reference external" href="https://docs.starkware.co/starkex/stark-curve.html">STARK Curve</a> and
+<a class="reference external" href="https://docs.starkware.co/starkex/pedersen-hash-function.html">Pedersen Hash Function</a>.</p>
+<p><strong>Safety note:</strong>
+In a real system, choosing the private keys must be done using a strong random mechanism.
+The reason we didn’t use random private keys for our dummy data is to get a deterministic
+example, which is more convenient for a tutorial.</p>
+<p>Here’s what we get:</p>
+</section>
+<section id="processing-the-program-input">
+<h2>Processing the program input<a class="headerlink" href="#processing-the-program-input" title="Link to this heading">¶</a></h2>
+<p>Let’s define a struct that will represent a single vote:</p>
+<p>Now, let’s write a function that returns an array of <code class="docutils literal notranslate"><span class="pre">VoteInfo</span></code> instances
+based on the program input.
+Note that since the entire function is basically just one hint, the validity of the returned data
+(e.g., that the signatures are valid, the votes are restricted to 0 or 1, etc.)
+<strong>is not guaranteed</strong>, so we must verify it later.</p>
+</section>
+<section id="verifying-that-the-votes-are-signed">
+<h2>Verifying that the votes are signed<a class="headerlink" href="#verifying-that-the-votes-are-signed" title="Link to this heading">¶</a></h2>
+<p>One of the first functions we will need is <code class="docutils literal notranslate"><span class="pre">verify_vote_signature()</span></code>, which
+gets a pointer to a <code class="docutils literal notranslate"><span class="pre">VoteInfo</span></code> instance and verifies that the vote was indeed signed
+by the voter’s public key (note that we still haven’t checked that the voter’s public key
+is one of the permitted public keys).</p>
+<p>The function starts by calling <code class="docutils literal notranslate"><span class="pre">hash2()</span></code> to compute the message
+hash. This is the counterpart of the line <code class="docutils literal notranslate"><span class="pre">pedersen_hash(POLL_ID,</span> <span class="pre">vote)</span></code>
+in the Python code above.</p>
+<p>Then, we call <code class="docutils literal notranslate"><span class="pre">verify_ecdsa_signature()</span></code> to check that the signature is valid.
+One subtlety is that <code class="docutils literal notranslate"><span class="pre">verify_ecdsa_signature()</span></code> gets the signature only as a hint for
+the prover – the fact that it completed successfully only implies that the prover knows
+a signature for the given message and public key, not that the specific <code class="docutils literal notranslate"><span class="pre">r</span></code> and <code class="docutils literal notranslate"><span class="pre">s</span></code>
+constitute that signature. In our case, it’s enough, as we don’t care about
+<code class="docutils literal notranslate"><span class="pre">r</span></code> and <code class="docutils literal notranslate"><span class="pre">s</span></code> themselves, we just want to make sure the message was signed by the given
+public key.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pedersen</span></code> builtin, which is required in order to compute the Pedersen hash function,
+is using an implicit argument called <code class="docutils literal notranslate"><span class="pre">pedersen_ptr</span></code>.
+On the other hand <code class="docutils literal notranslate"><span class="pre">hash2()</span></code> gets an implicit argument called <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code>.
+Therefore, we need to explicitly bind the <code class="docutils literal notranslate"><span class="pre">hash_ptr</span></code> implicit argument,
+using <code class="docutils literal notranslate"><span class="pre">hash2{hash_ptr=pedersen_ptr}(...)</span></code>.</p>
+<p>Similarly, the implicit argument <code class="docutils literal notranslate"><span class="pre">ecdsa_ptr</span></code> is used by <code class="docutils literal notranslate"><span class="pre">verify_ecdsa_signature</span></code>
+(here the name of the implicit argument of <code class="docutils literal notranslate"><span class="pre">verify_ecdsa_signature</span></code> is also <code class="docutils literal notranslate"><span class="pre">ecdsa_ptr</span></code>,
+so we don’t have to specify the binding explicitly).</p>
+</section>
+<section id="merkle-tree">
+<span id="voting-merkle-tree"></span><h2>Merkle tree<a class="headerlink" href="#merkle-tree" title="Link to this heading">¶</a></h2>
+<p>An important feature of our system will be that it will allow splitting the voting process
+to <em>batches</em>, where each batch can be processed in a separate Cairo run
+(this way we can support large and ongoing polls).
+This means that we will need to pass information between each pair of consecutive runs:
+which of the voters have already cast a vote
+(or rather, who is still allowed to vote)
+and what the results have been so far.</p>
+<p>We will use a <a class="reference external" href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a>
+to store the information about the public keys that are allowed to vote.
+A Merkle tree is a cryptographic primitive that
+allows “compressing” data of an arbitrary size to a very short value
+(in our case, it can fit in one field element).
+It works as follows: you take an array of values
+(usually of size which is a power of 2, say <span class="math notranslate nohighlight">\(2^k\)</span>)
+and you compute the hashes of pairs of values so that you obtain <span class="math notranslate nohighlight">\(2^k / 2 = 2^{k - 1}\)</span>
+hashes. You repeat this step once more to obtain <span class="math notranslate nohighlight">\(2^{k - 2}\)</span> hashes, and continue
+for a total of <span class="math notranslate nohighlight">\(k\)</span> steps, which results in one hash, called “the Merkle root”.
+The important property of Merkle trees is that given the Merkle root of an array of values,
+it is not feasible to find a different array of the same size with the same Merkle root.
+This way the Merkle root “encodes” all of the tree’s data.</p>
+<p>Our Merkle tree will contain
+all the voters’ public keys (padded with zeros) that haven’t voted yet.
+When someone votes, we replace their public key with 0 in the Merkle tree.
+Thus we guarantee that no one can vote
+more than once.</p>
+<p>For simplicity we hard-code the maximal number of voters to <span class="math notranslate nohighlight">\(2^{10} = 1024\)</span>:</p>
+<p>Each Cairo run will output 4 values: the number of “yes” and “no” votes and the Merkle root before
+and after processing the votes of that batch
+(note that each run handles one batch, which may include multiple votes).
+It is up to the system using the Cairo proofs (e.g., a smart contract)
+to make sure that the new root encoded in one proof
+is the same as the old root encoded in the next proof,
+and to add the partial results of the new batch to those accumulated thus far.</p>
+</section>
+<section id="processing-the-votes">
+<h2>Processing the votes<a class="headerlink" href="#processing-the-votes" title="Link to this heading">¶</a></h2>
+<p>To track the changes to the Merkle tree, we will use a <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array, which will encode
+the changes to the leaves (changing actual public keys to zeros). Let’s define a <code class="docutils literal notranslate"><span class="pre">VotingState</span></code>
+struct to keep track of the current ‘yes’ and ‘no’ counts and the <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array.
+If you need to recall how a <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array works, see <a class="reference internal" href="dict.html#dicts-in-cairo"><span class="std std-ref">Dictionaries/maps in Cairo</span></a>.</p>
+<p>Now, let’s write a function that returns an initial state, with both the “yes” and “no”
+counters set to zero, and an empty array for the tree’s changes.
+Note that we’re using <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code> to create the dict. <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code> is one of the high-level
+dictionary functions defined in <code class="docutils literal notranslate"><span class="pre">dict.cairo</span></code>. These functions maintain the current values
+of the dictionary using hints. Therefore, <code class="docutils literal notranslate"><span class="pre">dict_new()</span></code> expects to get a hint variable
+called <code class="docutils literal notranslate"><span class="pre">initial_dict</span></code> with the initial values of the dictionary.</p>
+<p>The following function verifies that the vote is signed and removes the public key from the tree.
+There are two options to handle the voting state:</p>
+<ol class="arabic simple">
+<li><p>Pass it as an argument and return the new state.</p></li>
+<li><p>Add it as an implicit argument.</p></li>
+</ol>
+<p>The two options have a different syntax, but they will be compiled to the same bytecode.
+Here we chose the second option as it simplifies the code calling <code class="docutils literal notranslate"><span class="pre">process_vote</span></code>.</p>
+<p>Finally, let’s write the loop that processes all the votes. It gets a pointer to an array
+of <code class="docutils literal notranslate"><span class="pre">VoteInfo</span></code> instances and its size and updates the given state accordingly.</p>
+</section>
+<section id="the-main-function">
+<span id="voting-main"></span><h2>The main() function<a class="headerlink" href="#the-main-function" title="Link to this heading">¶</a></h2>
+<p>As explained above, the program will output 4 values that summarize the batch:
+the number of “yes” and “no” votes and the Merkle root before and after processing
+the votes of that batch. The following struct represents that information:</p>
+<p>The only missing part is the computation of the two Merkle roots, based on the
+public key dictionary (<code class="docutils literal notranslate"><span class="pre">VotingState.public_key_tree_start</span></code> and
+<code class="docutils literal notranslate"><span class="pre">VotingState.public_key_tree_end</span></code>). In order to do this, we first squash the dict
+and then call the standard library function <code class="docutils literal notranslate"><span class="pre">small_merkle_tree_update()</span></code>
+(a requirement of <code class="docutils literal notranslate"><span class="pre">small_merkle_tree_update()</span></code> is that we use the high-level function
+<code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code> rather than <code class="docutils literal notranslate"><span class="pre">squash_dict()</span></code>. <code class="docutils literal notranslate"><span class="pre">dict_squash()</span></code> passes hint information about
+all of the dict entries to the squashed dict, including entries that haven’t changed.</p>
+<p>Note that we write <code class="docutils literal notranslate"><span class="pre">{state=state}</span></code> explicitly when we call <code class="docutils literal notranslate"><span class="pre">process_votes</span></code>. This is
+required since the compiler does not allow implicit bindings where the bound variable
+is not an implicit argument of the calling function. See more information
+<a class="reference internal" href="../how-cairozero-works/builtins.html#calling-with-implicit-arguments"><span class="std std-ref">here</span></a>.</p>
+<p>One new feature we used here is the <code class="docutils literal notranslate"><span class="pre">cast</span></code> keyword.
+The <code class="docutils literal notranslate"><span class="pre">cast</span></code> keyword in <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">output</span> <span class="pre">=</span> <span class="pre">cast(output_ptr,</span> <span class="pre">BatchOutput*);</span></code>
+converts the <code class="docutils literal notranslate"><span class="pre">felt</span></code> pointer to a
+pointer to <code class="docutils literal notranslate"><span class="pre">BatchOutput</span></code>, so the type of the <code class="docutils literal notranslate"><span class="pre">output</span></code> reference is <code class="docutils literal notranslate"><span class="pre">BatchOutput*</span></code>.
+Now we can write
+<code class="docutils literal notranslate"><span class="pre">output.n_yes_votes</span></code> to access the first output cell, which encodes the number of “yes” votes.</p>
+<p>Don’t forget to supply the program input file when you run the code
+(you can find the full Cairo file <a class="reference external" href="../_static/voting.cairo">here</a>):</p>
+<p>You should get:</p>
+</section>
+<section id="another-batch">
+<h2>Another batch<a class="headerlink" href="#another-batch" title="Link to this heading">¶</a></h2>
+<p>Our Cairo code supports voting in batches, so let’s try that.
+Let’s say that we want to run another batch after the one we just did.
+Modify <code class="docutils literal notranslate"><span class="pre">voting_input.json</span></code> so that the public keys of the voters who voted in the first batch
+are 0 and the <code class="docutils literal notranslate"><span class="pre">votes</span></code> section contains one new vote instead of the old three.
+You can use the following Python script:</p>
+<p>Run the same program again (you don’t need to recompile) with <code class="docutils literal notranslate"><span class="pre">voting_input2.json</span></code>.
+You should get:</p>
+<p>Note that indeed, the root of the Merkle tree before the second batch is the same as
+the root after the first one.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Hello, Cairo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Programming in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html">The 15-puzzle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html">Program input and hints</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Voting system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Hello, Cairo</a><ul>
+      <li>Previous: <a href="program_input.html" title="previous chapter">Program input and hints</a></li>
+      <li>Next: <a href="amm.html" title="next chapter">A simple Automated Market Maker (AMM)</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/voting.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

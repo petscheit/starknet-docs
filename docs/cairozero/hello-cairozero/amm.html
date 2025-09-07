@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>A simple Automated Market Maker (AMM) &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How Cairo Works" href="../how-cairozero-works/index.html" />
+    <link rel="prev" title="Voting system" href="voting.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="a-simple-automated-market-maker-amm">
+<span id="amm-cairo"></span><h1>A simple Automated Market Maker (AMM)<a class="headerlink" href="#a-simple-automated-market-maker-amm" title="Link to this heading">¶</a></h1>
+<p>Automated Market Maker (AMM), as you might guess from the name,
+is a mechanism that allows a simple way for market-making.
+In an AMM we have two types of users: traders and liquidity providers.</p>
+<p>Traders perform trades against liquidity pools.
+Every liquidity pool supports two or more assets,
+and allows trading according to some predetermined formula.
+This means that for every quantity of some asset that you want to buy,
+you can compute exactly how much you’d have to pay to receive it
+(given the current state of the pool).</p>
+<p>Unlike the regular order book matching, it’s very easy to write and run AMM logic.
+So easy that it can be fully deployed on Ethereum and still provide efficient, inexpensive trading.
+The user interface is extremely simple – you only need to specify the quantity of the assets
+you want to trade, and you know you’ll get a fair rate.
+An AMM is also very friendly for the Liquidity Providers –
+anyone can easily provide liquidity (invest money) and potentially profit by doing so.</p>
+<p>To learn more about AMM you can take a look at the
+<a class="reference external" href="https://uniswap.org/docs/v2/protocol-overview/how-uniswap-works/">Uniswap docs</a>.</p>
+<p>A regular smart contract implementing an AMM may change the balance of your on-chain account
+for each operation. The problem with this approach is that it implies that every operation
+will have a non-negligible gas cost.
+In order to achieve scalability, we move from transactions that change the on-chain (L1) state
+to off-chain transactions that change an off-chain (L2) state.
+Consider <a class="reference internal" href="voting.html#voting"><span class="std std-ref">the voting system example</span></a>. For each vote we changed the Merkle tree
+of public keys – this is an example of an off-chain state
+(note that the root of the Merkle is usually maintained on-chain, so the root by itself
+is an example of an on-chain state).</p>
+<p>In this tutorial we will write Cairo code that implements a very simple AMM.
+The system we are going to build will handle swaps between users and the AMM.
+Following the release StarkNet Planets Alpha, we released a <span class="xref std std-ref">tutorial</span>
+that implements the same functionality presented here, only as a StarkNet contract.
+Comparing those two tutorials can be a fun exercise that highlights the power of StarkNet.
+To keep the tutorial manageable, a few things were omitted
+(after reading this page, and assuming you have read the previous pages of the tutorial,
+you should be able to add all of them by yourself):</p>
+<ol class="arabic simple">
+<li><p>Only two tokens are supported, and the AMM supports a specific trading curve.</p></li>
+<li><p>Signature verification – in most scenarios you’ll need to verify that the user
+intended to make the transaction.</p></li>
+<li><p>One direction trades – The system only supports buying one token in exchange
+for the other one, in one direction.</p></li>
+<li><p>Users providing liquidity (off-chain) –
+providing liquidity can be handled on-chain with the proposed system,
+but you can also implement an off-chain version, where a user can move funds
+from their (off-chain) account to the AMM.</p></li>
+<li><p>Deposits and withdrawals – To make it a real system, you’ll have to allow users
+to deposit and withdraw their funds.
+This can be done by outputting the amount deposited or withdrawn and performing the
+equivalent operation on-chain, based on this output.</p></li>
+<li><p>Trading fees – usually some fee is taken from the traders, to incentivize
+liquidity providers.</p></li>
+</ol>
+<section id="accounts">
+<h2>Accounts<a class="headerlink" href="#accounts" title="Link to this heading">¶</a></h2>
+<p>Each account will contain the balances of the two tokens, and the public key of the user.
+Since this tutorial does not implement signature verification, we won’t really use the
+<code class="docutils literal notranslate"><span class="pre">public_key</span></code> field – it’s here mainly for the sake of completeness.</p>
+</section>
+<section id="modifying-an-account">
+<h2>Modifying an account<a class="headerlink" href="#modifying-an-account" title="Link to this heading">¶</a></h2>
+<p>First, let’s define the global state.
+We will use a <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array to track the changes to the accounts in the batch.
+The key will be the account id, and the value will be a pointer to an instance of the <code class="docutils literal notranslate"><span class="pre">Account</span></code>
+struct.
+If you need to recall how a <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> array works, see <a class="reference internal" href="dict.html#dicts-in-cairo"><span class="std std-ref">Dictionaries/maps in Cairo</span></a>.</p>
+<p>Now we can write a function that updates the balances of a given account and returns its key:</p>
+<p>Note that when we call <code class="docutils literal notranslate"><span class="pre">dict_write()</span></code> we need to cast the type
+of the value from <code class="docutils literal notranslate"><span class="pre">Account*</span></code> to <code class="docutils literal notranslate"><span class="pre">felt</span></code>: <code class="docutils literal notranslate"><span class="pre">&amp;new_account</span></code>
+is of type <code class="docutils literal notranslate"><span class="pre">Account*</span></code>, but <code class="docutils literal notranslate"><span class="pre">new_value</span></code> expects a value
+of type <code class="docutils literal notranslate"><span class="pre">felt</span></code>.</p>
+</section>
+<section id="swapping-tokens">
+<h2>Swapping Tokens<a class="headerlink" href="#swapping-tokens" title="Link to this heading">¶</a></h2>
+<p>Now let’s move on to the interesting part of the AMM: exchanging tokens.
+Say that a user wants to get <code class="docutils literal notranslate"><span class="pre">token_b</span></code> in exchange for <code class="docutils literal notranslate"><span class="pre">token_a</span></code> of some specified amount
+(<code class="docutils literal notranslate"><span class="pre">token_a_amount</span></code>). Let’s denote the amount of tokens they will get by <code class="docutils literal notranslate"><span class="pre">token_b_amount</span></code>.
+In the equations below we let:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> denote the amounts of <code class="docutils literal notranslate"><span class="pre">token_a</span></code> and <code class="docutils literal notranslate"><span class="pre">token_b</span></code> the user swaps,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> denote the current balances of <code class="docutils literal notranslate"><span class="pre">token_a</span></code> and <code class="docutils literal notranslate"><span class="pre">token_b</span></code> in the AMM
+(that is, <code class="docutils literal notranslate"><span class="pre">AmmState.token_a_balance</span></code> and <code class="docutils literal notranslate"><span class="pre">AmmState.token_b_balance</span></code>).</p></li>
+</ul>
+<p>The AMM formula states that the value of <code class="docutils literal notranslate"><span class="pre">token_a_balance</span> <span class="pre">*</span> <span class="pre">token_b_balance</span></code> (that is, <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">y</span></code>)
+should be preserved. So we have:</p>
+<div class="math notranslate nohighlight">
+\[(x + a) \cdot (y - b)  = x \cdot y.\]</div>
+<p>Let’s isolate <code class="docutils literal notranslate"><span class="pre">b</span></code> (as the rest of the values are known):</p>
+<div class="math notranslate nohighlight">
+\[b = \frac{y \cdot a}{x + a}.\]</div>
+</section>
+<section id="the-transaction-loop">
+<span id="transaction-loop-list"></span><span id="swap"></span><h2>The transaction loop<a class="headerlink" href="#the-transaction-loop" title="Link to this heading">¶</a></h2>
+<p>The following function takes an array of transactions and applies them to the state:</p>
+<p>The type <code class="docutils literal notranslate"><span class="pre">SwapTransaction**</span></code> represents a pointer to a pointer to an instance
+of <code class="docutils literal notranslate"><span class="pre">SwapTransaction</span></code>.
+In our case it represents a list of pointers to swap transactions,
+so that <code class="docutils literal notranslate"><span class="pre">[transactions]</span></code> is a pointer to the first transaction,
+<code class="docutils literal notranslate"><span class="pre">[transactions</span> <span class="pre">+</span> <span class="pre">1]</span></code> is a pointer to the second transaction and so on.</p>
+</section>
+<section id="computing-the-merkle-roots">
+<h2>Computing the Merkle roots<a class="headerlink" href="#computing-the-merkle-roots" title="Link to this heading">¶</a></h2>
+<p>The accounts will be stored as the leaves of
+a <a class="reference external" href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a>
+(similar to what we did in <a class="reference internal" href="voting.html#voting-merkle-tree"><span class="std std-ref">the voting tutorial</span></a>),
+so we need to generate one field element
+that represents the account information.
+We will do so by computing the hash of the <code class="docutils literal notranslate"><span class="pre">Account</span></code> struct’s members:</p>
+<p>We continue in a similar manner to the way the <a class="reference internal" href="voting.html#voting-main"><span class="std std-ref">main function</span></a> works in
+the voting tutorial.
+We need to take the dict of changes to the accounts, squash it and compute
+the Merkle roots before and after applying the batch of transactions.
+Unlike the voting tutorial, where the values in the dict were the leaves themselves,
+here the values are pointers to <code class="docutils literal notranslate"><span class="pre">Account</span></code> so
+before calling <code class="docutils literal notranslate"><span class="pre">small_merkle_tree_update</span></code> (and after squashing the dictionary)
+we call <code class="docutils literal notranslate"><span class="pre">hash_account</span></code> on all the values (both before and after the batch):</p>
+<p>Now we can compute the Merkle roots (we have arbitrarily chosen to use height of 10 in the
+Merkle tree, supporting <span class="math notranslate nohighlight">\(2^{10} = 1024\)</span> accounts):</p>
+<p>Let’s discuss the hint before calling <code class="docutils literal notranslate"><span class="pre">dict_new</span></code>.
+<code class="docutils literal notranslate"><span class="pre">dict_new</span></code> expects a hint variable called <code class="docutils literal notranslate"><span class="pre">initial_dict</span></code>
+that specifies what the values of the dictionary are before applying the changes.
+This is especially important since
+we need the information on <em>all</em> of the accounts for the Merkle root computation,
+and it’s likely that not all of them appeared in the batch.</p>
+<p>The computation of the <code class="docutils literal notranslate"><span class="pre">initial_dict</span></code> variable can be done in many ways.
+Here we chose to pass a hint variable <code class="docutils literal notranslate"><span class="pre">initial_account_dict</span></code>
+that we compute in <code class="docutils literal notranslate"><span class="pre">get_account_dict()</span></code> below.</p>
+</section>
+<section id="preparing-the-program-input">
+<h2>Preparing the program input<a class="headerlink" href="#preparing-the-program-input" title="Link to this heading">¶</a></h2>
+<p>Let’s create a program input file where we have two accounts with ids 0 and 5
+(recall that as we use a Merkle tree of height 10, the account ids should be in the range
+<span class="math notranslate nohighlight">\([0, 1024)\)</span>). We’ll have two swap transactions, one for each of the accounts.</p>
+<p>Create a file named <code class="docutils literal notranslate"><span class="pre">amm_input.json</span></code> with the following content:</p>
+<p>Now we’ll write two functions that parse the program input.
+Recall that values that are chosen by the hints cannot be trusted and their validity
+must be checked using Cairo instructions.
+For example, in <a class="reference internal" href="#swap"><span class="std std-ref">swap()</span></a> we verify that the transaction’s
+<code class="docutils literal notranslate"><span class="pre">token_a_amount</span></code>
+is in range (rather than a negative number, for example).</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">get_transactions()</span></code> we used a utility function called <code class="docutils literal notranslate"><span class="pre">segments.gen_arg()</span></code>.
+This function takes an array of values and creates a new <a class="reference internal" href="../how-cairozero-works/segments.html#segments"><span class="std std-ref">memory segment</span></a>
+initialized with those values. It returns a pointer to the new segment.
+For example,</p>
+<p>But that’s not all – <code class="docutils literal notranslate"><span class="pre">segments.gen_arg()</span></code> works recursively, so any element of the input array
+can be an array itself:</p>
+<p>By the way, another similar utility function is <code class="docutils literal notranslate"><span class="pre">segments.write_arg()</span></code>.
+It behaves like <code class="docutils literal notranslate"><span class="pre">segments.gen_arg()</span></code>,
+except that it gets the pointer to write to rather than allocating a new memory segment:</p>
+</section>
+<section id="the-main-function">
+<h2>The main() function<a class="headerlink" href="#the-main-function" title="Link to this heading">¶</a></h2>
+<p>Now we’re ready to write the <code class="docutils literal notranslate"><span class="pre">main()</span></code> function:</p>
+<p>Run the code (you can find the full Cairo file <a class="reference external" href="../_static/amm.cairo">here</a>):</p>
+<p>You should get:</p>
+<p>Note that the initial balances were 100 and 1000 as specified in the input file.
+The final balances, 120 and 835, are consistent with the logs of transactions.</p>
+<p>Let’s examine the product formula:
+After the first transaction the AMM has <span class="math notranslate nohighlight">\(100 + 10 = 110\)</span> and <span class="math notranslate nohighlight">\(1000 - 90 = 910\)</span>
+tokens respectively.
+Indeed 110 * 910 is approximately 100 * 1000. In fact, it is slightly greater.
+If the user had gotten 91 tokens rather than 90, the product would’ve been slightly smaller:</p>
+<div class="math notranslate nohighlight">
+\[110 \cdot 910 = 100100 &gt; 100000 = 100 \cdot 1000 &gt; 99990 = 110 \cdot 909.\]</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Hello, Cairo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Programming in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html">The 15-puzzle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html">Program input and hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html">Voting system</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Hello, Cairo</a><ul>
+      <li>Previous: <a href="voting.html" title="previous chapter">Voting system</a></li>
+      <li>Next: <a href="../how-cairozero-works/index.html" title="next chapter">How Cairo Works</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/amm.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

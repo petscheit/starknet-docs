@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Programming in Cairo &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The 15-puzzle" href="puzzle.html" />
+    <link rel="prev" title="Hello, Cairo" href="index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="programming-in-cairo">
+<h1>Programming in Cairo<a class="headerlink" href="#programming-in-cairo" title="Link to this heading">¶</a></h1>
+<section id="your-first-function">
+<h2>Your first function<a class="headerlink" href="#your-first-function" title="Link to this heading">¶</a></h2>
+<p>Let’s start by looking at the following Cairo function which computes the sum of the elements of an
+array:</p>
+<p>The first two lines are comment lines, and are ignored by the compiler.
+Comments in Cairo start with <code class="docutils literal notranslate"><span class="pre">//</span></code> and continue until the end of the line.</p>
+<p>The first non-comment line <code class="docutils literal notranslate"><span class="pre">func</span> <span class="pre">array_sum(arr:</span> <span class="pre">felt*,</span> <span class="pre">size)</span> <span class="pre">-&gt;</span> <span class="pre">felt</span> <span class="pre">{</span></code>
+defines a function named <code class="docutils literal notranslate"><span class="pre">array_sum</span></code>
+which takes two arguments: <code class="docutils literal notranslate"><span class="pre">arr</span></code> and <code class="docutils literal notranslate"><span class="pre">size</span></code>.
+<code class="docutils literal notranslate"><span class="pre">arr</span></code> points to an array of <code class="docutils literal notranslate"><span class="pre">size</span></code> elements.
+The type of <code class="docutils literal notranslate"><span class="pre">arr</span></code> is <code class="docutils literal notranslate"><span class="pre">felt*</span></code> which is a pointer
+(for more information about <code class="docutils literal notranslate"><span class="pre">felt</span></code>, see  <a class="reference internal" href="#field-element"><span class="std std-ref">below</span></a>).
+The function declares that it returns a single field element (<code class="docutils literal notranslate"><span class="pre">felt</span></code>).
+The scope of the function ends with the <code class="docutils literal notranslate"><span class="pre">}</span></code> character
+(although <code class="docutils literal notranslate"><span class="pre">}</span></code> doesn’t mean that the function returns – you must add the <code class="docutils literal notranslate"><span class="pre">return</span></code> statement
+explicitly).</p>
+<p>The next line <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">(size</span> <span class="pre">==</span> <span class="pre">0)</span> <span class="pre">{</span></code> instructs Cairo to execute the code in the <code class="docutils literal notranslate"><span class="pre">if</span></code> statement’s
+body if <code class="docutils literal notranslate"><span class="pre">size</span></code> is zero, and skip to the end of the if statement’s body otherwise.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">==</span> <span class="pre">0</span></code>, there are no elements in the array, and so we can return that the sum is zero.
+As with other programming languages, the return statement ends the execution of the function
+immediately and returns the control to the calling function.</p>
+<p>Now to the interesting part.
+The line <code class="docutils literal notranslate"><span class="pre">let</span> <span class="pre">sum_of_rest</span> <span class="pre">=</span> <span class="pre">array_sum(arr=arr</span> <span class="pre">+</span> <span class="pre">1,</span> <span class="pre">size=size</span> <span class="pre">-</span> <span class="pre">1);</span></code>
+(which is executed only if <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">!=</span> <span class="pre">0</span></code>)
+makes a recursive call to <code class="docutils literal notranslate"><span class="pre">array_sum()</span></code>, starting from the second element
+(as <code class="docutils literal notranslate"><span class="pre">arr</span></code> points to the first memory cell of the array, <code class="docutils literal notranslate"><span class="pre">arr</span> <span class="pre">+</span> <span class="pre">1</span></code> points to the second cell.
+Also note that we need to pass <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">-</span> <span class="pre">1</span></code>),
+and stores the result in a variable named <code class="docutils literal notranslate"><span class="pre">sum_of_rest</span></code>.
+Note that you don’t have to write <code class="docutils literal notranslate"><span class="pre">arr=</span></code> and <code class="docutils literal notranslate"><span class="pre">size=</span></code>
+but it is recommended as it increases the readability of the code.</p>
+<p>The scope of the return values of functions is restricted
+(for example, they may be revoked due to jumps or function calls).
+Later, we will see how to overcome this by using local variables.
+You can read more in <a class="reference internal" href="../how-cairozero-works/consts.html#revoked-references"><span class="std std-ref">Revoked references</span></a>.</p>
+<p>Finally, we return the sum of the first element with the sum of the rest of the elements.
+You can use either <code class="docutils literal notranslate"><span class="pre">arr[0]</span></code> or <code class="docutils literal notranslate"><span class="pre">[arr]</span></code> for the value of the first element of the array
+(<code class="docutils literal notranslate"><span class="pre">[...]</span></code> is the dereference operator, so <code class="docutils literal notranslate"><span class="pre">[arr]</span></code> is the value of the memory at address <code class="docutils literal notranslate"><span class="pre">arr</span></code>).</p>
+<section id="exercise">
+<span id="product-exercise"></span><h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>Write a function that computes the product of all the even entries of an array
+<code class="docutils literal notranslate"><span class="pre">(arr[0]</span> <span class="pre">*</span> <span class="pre">arr[2]</span> <span class="pre">*</span> <span class="pre">...)</span></code>. You may assume that the length is even.
+(You may want to wait with running it until you read <a class="reference internal" href="#using-array-sum"><span class="std std-ref">Using array_sum()</span></a>.)</p>
+</section>
+<section id="a-low-level-language-with-powerful-syntactic-sugar">
+<h3>A low-level language with powerful syntactic sugar<a class="headerlink" href="#a-low-level-language-with-powerful-syntactic-sugar" title="Link to this heading">¶</a></h3>
+<p>Cairo is not a high-level language.
+It’s a low-level language with some powerful syntactic sugar to allow writing maintainable code.
+The advantage is that the Cairo language allows you to write very efficient code
+(you can write in the Cairo language almost anything you can run on the Cairo machine).
+The main disadvantage is that in some places you’ll have to know what you’re doing in order to
+avoid some common mistakes.
+Don’t worry though, this document will guide you through those delicate places.</p>
+</section>
+<section id="recursion-instead-of-loops">
+<h3>Recursion instead of loops<a class="headerlink" href="#recursion-instead-of-loops" title="Link to this heading">¶</a></h3>
+<p>You may have noticed that we’ve used recursion in the code above rather than
+the loop structure you may have expected.
+The main reason for this is that the Cairo memory is immutable –
+once you write the value of a memory cell, this cell cannot change in the future.
+This is similar to pure functional languages, whose objects are also immutable,
+where you also have to replace loops with recursion for the same reason.</p>
+<p>Having said that, we will note that loop structures (in some sense) are possible in Cairo,
+but they are limited (you cannot call functions inside a loop, for example)
+and more complicated to implement. Their only advantage is that they tend to be
+slightly more efficient than recursion.</p>
+</section>
+</section>
+<section id="the-assert-statement">
+<h2>The assert statement<a class="headerlink" href="#the-assert-statement" title="Link to this heading">¶</a></h2>
+<p>The assert statement:</p>
+<p>which we use below, allows us to do two things: verify that two values
+are the same (as you may have expected), but also to assign a value to a memory cell.
+For example, <code class="docutils literal notranslate"><span class="pre">assert</span> <span class="pre">[ptr]</span> <span class="pre">=</span> <span class="pre">0;</span></code> will set the value of the memory cell at address <code class="docutils literal notranslate"><span class="pre">ptr</span></code> to
+<code class="docutils literal notranslate"><span class="pre">0</span></code> (if it was not set before).
+This has to do with the fact that the Cairo memory is immutable:
+If the values were previously set it will function as an assert statement.
+On the other hand, if the value on the left-hand side
+(in some simple cases it will work with the right-hand side as well)
+was not set yet, Cairo will set it, thus causing the assert to pass.</p>
+<p>So how can I change the value of <code class="docutils literal notranslate"><span class="pre">[ptr]</span></code> if I already set it before?
+Won’t the assert statement function as an assert rather than an assignment?
+The answer is that you can’t – Cairo memory is immutable, which means that once a value
+was written to a memory cell, it cannot change.</p>
+<p>You can read more in <a class="reference internal" href="../how-cairozero-works/cairo_intro.html#memory-model"><span class="std std-ref">Memory model</span></a>.</p>
+</section>
+<section id="writing-a-main-function">
+<h2>Writing a main() function<a class="headerlink" href="#writing-a-main-function" title="Link to this heading">¶</a></h2>
+<p>Before we write a <code class="docutils literal notranslate"><span class="pre">main()</span></code> function that will call <code class="docutils literal notranslate"><span class="pre">array_sum()</span></code>, let’s start with something
+simpler:</p>
+<p>There are a few new components we see here:</p>
+<ol class="arabic">
+<li><p><strong>The function main()</strong>:
+The <code class="docutils literal notranslate"><span class="pre">main()</span></code> function is the starting point of the Cairo program.</p></li>
+<li><p><strong>The builtin directive and the output builtin</strong>:
+The directive <code class="docutils literal notranslate"><span class="pre">%builtins</span> <span class="pre">output</span></code> instructs the Cairo compiler that our program
+will use the “output” builtin.
+You can learn about builtins in general <a class="reference internal" href="../how-cairozero-works/builtins.html#builtins"><span class="std std-ref">here</span></a>.
+For now we will focus on the output builtin we’re using here.</p>
+<p>The output builtin is what allows the program to communicate with the external world.
+You can think of it as the equivalent of Python’s <code class="docutils literal notranslate"><span class="pre">print()</span></code> or C++’s <code class="docutils literal notranslate"><span class="pre">std::cout</span></code>.
+As with all builtins, we don’t have special instructions in Cairo to use them –
+the communication with the builtin is done by reading/writing values to the memory.</p>
+<p>The output builtin is quite simple: Declaring it using <code class="docutils literal notranslate"><span class="pre">%builtins</span></code> turns the signature
+of <code class="docutils literal notranslate"><span class="pre">main()</span></code> to <code class="docutils literal notranslate"><span class="pre">main{output_ptr:</span> <span class="pre">felt*}()</span></code>.
+The syntax <code class="docutils literal notranslate"><span class="pre">{output_ptr:</span> <span class="pre">felt*}</span></code> declares an “implicit argument”, which means that
+behind the scenes, it adds both a corresponding argument and return value.
+More information about implicit arguments can be found in <a class="reference internal" href="../how-cairozero-works/builtins.html#implicit-arguments"><span class="std std-ref">Implicit arguments</span></a>.</p>
+<p>The argument points to the <em>beginning</em> of the memory segment to which the program output
+should be written.
+The program should then <em>return</em> a pointer that marks the <em>end</em> of the output.
+The convention we use in Cairo is that the end of a memory segment always points to the
+memory cell <strong>after</strong> the last written cell.
+And indeed, this is what Cairo expects of the returned value.</p>
+</li>
+<li><p><strong>The function serialize_word()</strong>:
+To write the value <code class="docutils literal notranslate"><span class="pre">x</span></code> to the output, we can use the library function <code class="docutils literal notranslate"><span class="pre">serialize_word(x)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">serialize_word</span></code> gets one argument (the value we want to write) and one implicit argument
+<code class="docutils literal notranslate"><span class="pre">output_ptr</span></code> (which means that behind the scenes it also returns one value).
+In fact it’s quite simple: it writes <code class="docutils literal notranslate"><span class="pre">x</span></code> to the memory cell pointed by <code class="docutils literal notranslate"><span class="pre">output_ptr</span></code>
+(that is, <code class="docutils literal notranslate"><span class="pre">[output_ptr]</span></code>) and returns <code class="docutils literal notranslate"><span class="pre">output_ptr</span> <span class="pre">+</span> <span class="pre">1</span></code>.
+Now the implicit argument mechanism kicks in: in the first call to <code class="docutils literal notranslate"><span class="pre">serialize_word()</span></code>
+the Cairo compiler passes the value of <code class="docutils literal notranslate"><span class="pre">output_ptr</span></code> as the implicit argument.
+In the second call it uses the value returned by the first call.</p></li>
+<li><p><strong>Import statements</strong>:
+The line <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">starkware.cairo.common.serialize</span> <span class="pre">import</span> <span class="pre">serialize_word</span></code> instructs
+the compiler to compile the file <code class="docutils literal notranslate"><span class="pre">starkware/cairo/common/serialize.cairo</span></code>, and to expose
+the identifier <code class="docutils literal notranslate"><span class="pre">serialize_word</span></code>.
+You can use <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">import</span> <span class="pre">serialize_word</span> <span class="pre">as</span> <span class="pre">foo</span></code> to choose a different
+name in which you can address <code class="docutils literal notranslate"><span class="pre">serialize_word</span></code> in the current module.
+You can learn more about the import statement <a class="reference internal" href="../how-cairozero-works/imports.html#imports"><span class="std std-ref">here</span></a>.</p></li>
+</ol>
+<section id="running-the-code">
+<h3>Running the code<a class="headerlink" href="#running-the-code" title="Link to this heading">¶</a></h3>
+<p>Save the code above (with the <code class="docutils literal notranslate"><span class="pre">main()</span></code> function)
+as <code class="docutils literal notranslate"><span class="pre">array_sum.cairo</span></code> (later we will change it to call <code class="docutils literal notranslate"><span class="pre">array_sum()</span></code>),
+and compile and run it using the following commands:</p>
+<p>You should get:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--layout</span></code> flag is needed because we’re using the output builtin, which is not available
+in the plain layout (see <a class="reference internal" href="../how-cairozero-works/builtins.html#layouts"><span class="std std-ref">Layouts</span></a>).</p>
+</section>
+</section>
+<section id="the-primitive-type-field-element-felt">
+<span id="field-element"></span><h2>The primitive type - field element (felt)<a class="headerlink" href="#the-primitive-type-field-element-felt" title="Link to this heading">¶</a></h2>
+<p>In Cairo when you don’t specify a type of a variable/argument, its type is a <strong>field element</strong>
+(represented by the keyword <code class="docutils literal notranslate"><span class="pre">felt</span></code>).
+In the context of Cairo, when we say “a field element” we mean an integer in the range
+<span class="math notranslate nohighlight">\(-P/2 &lt; x &lt; P/2\)</span> where <span class="math notranslate nohighlight">\(P\)</span> is a very large (prime) number
+(currently it is a 252-bit number, which is a number with 76 decimal digits).
+When we add, subtract or multiply and the result is outside the range above, there is an
+overflow, and the appropriate multiple of <span class="math notranslate nohighlight">\(P\)</span> is added or subtracted to bring
+the result back into this range (in other words, the result is computed modulo <span class="math notranslate nohighlight">\(P\)</span>).</p>
+<p>The most important difference between integers and field elements is <strong>division</strong>:
+Division of field elements (and therefore division in Cairo) <em>is not</em> the integer division
+you have in many programming languages, where the integral part of the quotient is
+returned (so you get <code class="docutils literal notranslate"><span class="pre">7</span> <span class="pre">/</span> <span class="pre">3</span> <span class="pre">=</span> <span class="pre">2</span></code>).
+As long as the numerator is a multiple of the denominator,
+it will behave as you expect (<code class="docutils literal notranslate"><span class="pre">6</span> <span class="pre">/</span> <span class="pre">3</span> <span class="pre">=</span> <span class="pre">2</span></code>).
+If this is not the case, for example when we divide <code class="docutils literal notranslate"><span class="pre">7/3</span></code>,
+it will result in a field element <code class="docutils literal notranslate"><span class="pre">x</span></code> that will satisfy <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">7</span></code>.
+It won’t be <code class="docutils literal notranslate"><span class="pre">2.3333</span></code> because <code class="docutils literal notranslate"><span class="pre">x</span></code> has to be an integer.
+If this seems impossible, remember that if <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">x</span></code> is outside the range
+<span class="math notranslate nohighlight">\(-P/2 &lt; x &lt; P/2\)</span>, an overflow will occur which can bring the result down to 7.
+It’s a well-known mathematical fact that unless the denominator is zero, there will always
+be a value <code class="docutils literal notranslate"><span class="pre">x</span></code> satisfying <code class="docutils literal notranslate"><span class="pre">denominator</span> <span class="pre">*</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">numerator</span></code>.</p>
+<p>Let’s try it! Modify the code in <code class="docutils literal notranslate"><span class="pre">array_sum.cairo</span></code> as follows:</p>
+<p>Use the commands above to run it (don’t forget to compile again, or you’ll get the same output
+you had before). You should get:</p>
+<p>Now, edit the code to print the result of multiplying the last number by 3
+and verify that you indeed get 7.</p>
+<p>You’ll see that in most of your code (unless you intend to write a very algebraic code),
+you won’t have to deal with the fact that the values in Cairo are field elements
+and you’ll be able to treat them as if they were normal integers.</p>
+</section>
+<section id="using-array-sum">
+<span id="id1"></span><h2>Using array_sum()<a class="headerlink" href="#using-array-sum" title="Link to this heading">¶</a></h2>
+<p>Now, let’s write a <code class="docutils literal notranslate"><span class="pre">main()</span></code> function that will use <code class="docutils literal notranslate"><span class="pre">array_sum()</span></code>.
+To do this, we will need to allocate space for the array.
+This is done using the library function <code class="docutils literal notranslate"><span class="pre">alloc()</span></code>:</p>
+<p>Here we have a few additional new things:</p>
+<ol class="arabic simple">
+<li><p><strong>Memory allocation</strong>:
+We use the standard library function <code class="docutils literal notranslate"><span class="pre">alloc()</span></code> to allocate a new memory segment.
+In practice the exact location of the allocated memory will be determined only when the program
+terminates, which allows us to avoid specifying the size of the allocation.</p></li>
+<li><p><strong>Constants</strong>:
+A constant in Cairo is defined using <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">CONST_NAME</span> <span class="pre">=</span> <span class="pre">&lt;expr&gt;;</span></code> where <code class="docutils literal notranslate"><span class="pre">&lt;expr&gt;</span></code>
+must be an integer (a field element, to be precise), known at compile time.</p></li>
+</ol>
+<p>Compile and run the code (note that you’ll have to copy the code of <code class="docutils literal notranslate"><span class="pre">array_sum()</span></code> from
+the top of the page). You should get:</p>
+<section id="id2">
+<h3>Exercise<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p>If you haven’t done so already, try to run your <a class="reference internal" href="#product-exercise"><span class="std std-ref">product function</span></a>
+using the <code class="docutils literal notranslate"><span class="pre">main()</span></code> above. Don’t forget to adjust the number of elements to an even number.</p>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Hello, Cairo</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Programming in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html">The 15-puzzle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program_input.html">Program input and hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html">Voting system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Hello, Cairo</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Hello, Cairo</a></li>
+      <li>Next: <a href="puzzle.html" title="next chapter">The 15-puzzle</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/intro.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

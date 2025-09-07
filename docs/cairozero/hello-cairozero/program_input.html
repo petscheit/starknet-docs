@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Program input and hints &#8212; Cairo Documentation (Cairo 0)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Voting system" href="voting.html" />
+    <link rel="prev" title="The 15-puzzle - cont." href="dict.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="program-input-and-hints">
+<h1>Program input and hints<a class="headerlink" href="#program-input-and-hints" title="Link to this heading">¶</a></h1>
+<p>So far programming in Cairo was very similar to programming in conventional programming languages.
+In this section we will see one of the main differences:
+The Cairo proof system is used to prove that a certain program runs successfully.
+Thus, unlike conventional programming languages where you have only one party that runs the program,
+here you have two parties – the prover and the verifier. The <strong>prover</strong> tries to prove
+that a certain computation was performed, and the <strong>verifier</strong> wants to verify the correctness
+of the proof.
+For example, the prover may have an input that it will not share with the verifier
+(such as the solution to the 15-puzzle). Thus we need a way to instruct the prover how to
+process this additional data.</p>
+<p>In order to finish our 15-puzzle program, we need to get rid of the hard-coded solution.
+Instead, the solution we’re verifying will be given as the program input.
+We will explain what that means right after we discuss one of its building blocks – the hints.</p>
+<section id="hints">
+<h2>Hints<a class="headerlink" href="#hints" title="Link to this heading">¶</a></h2>
+<p>A hint is a piece of Python code,
+which contains instructions that only the prover sees and executes. From the point of
+view of the verifier these hints do not exist.</p>
+<p>Consider the following functions:</p>
+<p>The line <code class="docutils literal notranslate"><span class="pre">%{</span> <span class="pre">ids.x</span> <span class="pre">=</span> <span class="pre">5</span> <span class="pre">%}</span></code> is a hint. It instructs the prover to assign the value <code class="docutils literal notranslate"><span class="pre">5</span></code> to
+the variable <code class="docutils literal notranslate"><span class="pre">x</span></code>. We discuss the <code class="docutils literal notranslate"><span class="pre">ids</span></code> variable in more detail <a class="reference internal" href="#hl-ids"><span class="std std-ref">below</span></a>.</p>
+<p>From the point of view of the <strong>prover</strong>, both functions return 5.
+From the point of view of the <strong>verifier</strong>, <code class="docutils literal notranslate"><span class="pre">foo</span></code> returns 5 as well,
+but the hint in <code class="docutils literal notranslate"><span class="pre">bar</span></code> is ignored and thus <code class="docutils literal notranslate"><span class="pre">bar</span></code> looks to the verifier as follows:</p>
+<p>This may look weird at a first glance, since x is uninitialized and then we assert that
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">25</span></code> and returned the uninitialized value. But in Cairo when you have an
+uninitialized value, it simply means that the prover decides on its value (due to immutability,
+the value of <code class="docutils literal notranslate"><span class="pre">x</span></code> cannot change during the run).
+Let’s analyze the code of <code class="docutils literal notranslate"><span class="pre">bar()</span></code> from the point of view of the verifier
+(so we must ignore the hint).
+Let’s say that the prover chooses to initialize <code class="docutils literal notranslate"><span class="pre">x</span></code> with <code class="docutils literal notranslate"><span class="pre">0</span></code>.
+As <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">*</span> <span class="pre">0</span> <span class="pre">!=</span> <span class="pre">25</span></code>, the entire run will fail, and the prover will not be able to generate a
+proof. So the prover must choose a value that satisfies <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">25</span></code>.
+There are two possibilities: <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">5</span></code> and <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">-5</span></code>.
+This means that when <code class="docutils literal notranslate"><span class="pre">bar()</span></code> is called the verifier knows it returns either 5 or -5,
+but it doesn’t know which of them.</p>
+<p>This explains why we need the hint – the prover has to know which value to return,
+it can’t guess it.</p>
+<p>You can learn more about hints <a class="reference internal" href="../how-cairozero-works/hints.html#hints"><span class="std std-ref">here</span></a>.</p>
+</section>
+<section id="program-input">
+<h2>Program input<a class="headerlink" href="#program-input" title="Link to this heading">¶</a></h2>
+<p>The way program input is handled is facilitated by hints –
+the prover has to know which input to process, but the verifier doesn’t care
+(the verifier cares only about the initial state and that the solution is valid).</p>
+<p>Let’s take a look at the final <code class="docutils literal notranslate"><span class="pre">main()</span></code> function:</p>
+</section>
+<section id="running-the-program">
+<h2>Running the program<a class="headerlink" href="#running-the-program" title="Link to this heading">¶</a></h2>
+<p>In order to run the program, create a json file named <code class="docutils literal notranslate"><span class="pre">puzzle_input.json</span></code>
+with the solution to be verified:</p>
+<p>Compile and run using:</p>
+</section>
+<section id="taking-advantage-of-nondeterminism">
+<h2>Taking advantage of nondeterminism<a class="headerlink" href="#taking-advantage-of-nondeterminism" title="Link to this heading">¶</a></h2>
+<p>Say that you have a list of <code class="docutils literal notranslate"><span class="pre">N</span></code> pairs <code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">value)</span></code> and you want a function <code class="docutils literal notranslate"><span class="pre">get_value_by_key</span></code>
+that returns the <code class="docutils literal notranslate"><span class="pre">value</span></code> that’s associated with a certain <code class="docutils literal notranslate"><span class="pre">key</span></code>.
+You may assume that the keys are distinct.
+Take a moment to think how to write such a function.</p>
+<p>The naive solution takes <code class="docutils literal notranslate"><span class="pre">O(N)</span></code> Cairo instructions. It turns out that using nondeterminism
+it can be done with a constant number of instructions!
+All we have to do is find the right index using a hint.
+Then, we check that we got the correct key, and that the index is in range:</p>
+<section id="array-index-access">
+<h3>Array index access<a class="headerlink" href="#array-index-access" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">get_value_by_key()</span></code> function gets a pointer to the beginning of an array,
+the array size, and a key value. It looks for this key
+and then returns the value that corresponds to this key.
+To access the element at index <code class="docutils literal notranslate"><span class="pre">idx</span></code> (where the index is zero-based),
+one may write <code class="docutils literal notranslate"><span class="pre">list[idx]</span></code>. This is an expression of type <code class="docutils literal notranslate"><span class="pre">KeyValue</span></code>,
+which is equivalent to <code class="docutils literal notranslate"><span class="pre">[list</span> <span class="pre">+</span> <span class="pre">KeyValue.SIZE</span> <span class="pre">*</span> <span class="pre">idx]</span></code>.
+Similarly, you can write <code class="docutils literal notranslate"><span class="pre">list[idx].key</span></code> for the <code class="docutils literal notranslate"><span class="pre">key</span></code> member of that element.</p>
+</section>
+<section id="the-ids-variable">
+<span id="hl-ids"></span><h3>The <code class="docutils literal notranslate"><span class="pre">ids</span></code> variable<a class="headerlink" href="#the-ids-variable" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">ids</span></code> variable is the way hints communicate with Cairo objects.
+We already saw that <code class="docutils literal notranslate"><span class="pre">ids</span></code> can be used to set local variables. Now we see that it
+can be used to get the values of constants and the offsets of members.
+For example, <code class="docutils literal notranslate"><span class="pre">ids.KeyValue.SIZE</span></code> is 2 and <code class="docutils literal notranslate"><span class="pre">ids.KeyValue.key</span></code> is 0 (as <code class="docutils literal notranslate"><span class="pre">key</span></code> is the first
+member of the struct).
+Note that due to technical constraints, when we want the address stored in a variable
+of type <code class="docutils literal notranslate"><span class="pre">T*</span></code> (for example, <code class="docutils literal notranslate"><span class="pre">list</span></code>) we need to add <code class="docutils literal notranslate"><span class="pre">.address_</span></code>.
+This enables us to write things like <code class="docutils literal notranslate"><span class="pre">ids.list.key</span></code> which will be the first field of the
+<code class="docutils literal notranslate"><span class="pre">KeyValue</span></code> struct.</p>
+</section>
+<section id="reviewing-get-value-by-key">
+<h3>Reviewing <code class="docutils literal notranslate"><span class="pre">get_value_by_key()</span></code><a class="headerlink" href="#reviewing-get-value-by-key" title="Link to this heading">¶</a></h3>
+<p>Let’s make a quick review of the code:
+We start by defining a local variable <code class="docutils literal notranslate"><span class="pre">idx</span></code> which we leave unassigned for now.
+Then we have a hint that looks for the entry with the requested key
+and assigns the index to <code class="docutils literal notranslate"><span class="pre">idx</span></code>.
+The hint itself does take <code class="docutils literal notranslate"><span class="pre">O(N)</span></code> operations, but this is not part of the Cairo code –
+remember, a hint is just the instructions for the prover on how to resolve
+nondeterminism. In practice, the operations of a hint are much cheaper (and in most cases
+negligible) with respect to Cairo instructions.</p>
+<p>The next thing is a Cairo statement verifying that we got the correct key.
+Why do we need that line, where this is already guaranteed by the hint?
+(Note that the hint will never choose an index that doesn’t match the key.)</p>
+<p>To answer this question, let’s analyze the program from the point of view of the verifier.
+As the hints are only seen by the prover,
+the way the verifier sees the program is as follows:</p>
+<p>One takes an uninitialized number <code class="docutils literal notranslate"><span class="pre">idx</span></code>
+(we will use the terms “guess” and “nondeterministic” interchangeably with “uninitialized”)
+which they know nothing about,
+then they check that this index corresponds to the key and within range.
+Without either of these checks, it is clear that the prover will be able to cheat –
+all it has to do is to replace the hint with a wrong one (e.g., <code class="docutils literal notranslate"><span class="pre">%{</span> <span class="pre">ids.idx</span> <span class="pre">=</span> <span class="pre">2</span> <span class="pre">%}</span></code>).</p>
+<p>The correctness of code from the point of view of the verifier is called “soundness”,
+and if it holds the code is said to be sound. When you analyze the soundness of the code
+you must <strong>ignore all the hints</strong>.</p>
+<p>The other direction – that indeed the hint will find the right index is called “completeness”
+(and of course when checking for “completeness” you do take into account the hints).</p>
+<p>A good Cairo code must be both sound and complete.
+Soundness is the condition people aren’t accustomed to verify,
+but in most aspects it’s the important one :)</p>
+</section>
+<section id="exercise">
+<h3>Exercise<a class="headerlink" href="#exercise" title="Link to this heading">¶</a></h3>
+<p>Write the function <code class="docutils literal notranslate"><span class="pre">sum_by_key</span></code> which
+gets a list of key-value pairs, and returns a list of key-value pairs,
+where each key in the returned list appears once, and its value is the sum of the values
+that correspond to the same key in the input list.
+For example given the list <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">5),</span> <span class="pre">(1,</span> <span class="pre">10),</span> <span class="pre">(3,</span> <span class="pre">1),</span> <span class="pre">(3,</span> <span class="pre">8),</span> <span class="pre">(1,</span> <span class="pre">20)</span></code>
+the function should return <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">30),</span> <span class="pre">(3,</span> <span class="pre">14)</span></code> (the order of the keys is not important).</p>
+<p>Hint: build a list of <code class="docutils literal notranslate"><span class="pre">DictAccess</span></code> entries where you have an entry for each key-value pair.
+For the pair <code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">value)</span></code>, you will have an entry on the same key with
+<code class="docutils literal notranslate"><span class="pre">new_value</span> <span class="pre">=</span> <span class="pre">prev_value</span> <span class="pre">+</span> <span class="pre">value</span></code>.</p>
+<p>Use hints to track the cumulative sums.</p>
+<p>After you’ve built the Cairo dict entries, call <code class="docutils literal notranslate"><span class="pre">squash_dict</span></code>.
+Check that each entry in the squashed dict has <code class="docutils literal notranslate"><span class="pre">prev_value</span> <span class="pre">=</span> <span class="pre">0</span></code>,
+and write <code class="docutils literal notranslate"><span class="pre">key</span></code> and <code class="docutils literal notranslate"><span class="pre">new_value</span></code> to the output array.</p>
+<p>Here is a template for your code:</p>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Cairo Documentation (Cairo 0)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Cairo Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Setting up the environment</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Hello, Cairo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Programming in Cairo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="puzzle.html">The 15-puzzle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dict.html">The 15-puzzle - cont.</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Program input and hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="voting.html">Voting system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amm.html">A simple Automated Market Maker (AMM)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../how-cairozero-works/index.html">How Cairo Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sharp.html">Using SHARP (Shared Prover)</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Hello, Cairo</a><ul>
+      <li>Previous: <a href="dict.html" title="previous chapter">The 15-puzzle - cont.</a></li>
+      <li>Next: <a href="voting.html" title="next chapter">Voting system</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/hello-cairozero/program_input.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
